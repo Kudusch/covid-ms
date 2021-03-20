@@ -1,0 +1,125 @@
+---
+title: "COVID-MS"
+author: "Tim Schatto-Eckrodt"
+output: 
+    html_document:
+      css: style.css
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, include=FALSE, echo=FALSE}
+#source("generate_widget.R", local = knitr::knit_global())
+library(magrittr)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(plotly)
+library(scales)
+library(jsonlite)
+library(httr)
+
+return_json <- content(
+        httr::GET(
+            "https://services7.arcgis.com/mOBPykOjAyBO2ZKk/arcgis/rest/services/RKI_Landkreisdaten/FeatureServer/0/query?where=AGS%20%3D%20'05515'&outFields=death_rate,cases,deaths,cases_per_100k,cases_per_population,county,last_update,cases7_per_100k,recovered,BL,EWZ&returnGeometry=false&outSR=4326&f=json",
+        accept_json()
+    ),
+    type="application/json"
+)
+population <- return_json$features[[1]]$attributes$EWZ
+cases7_per_100k <- return_json$features[[1]]$attributes$cases7_per_100k
+last_updated <- return_json$features[[1]]$attributes$last_update
+last_updated <- substr(last_updated, 1, 10)
+
+return_json <- httr::GET(
+    "https://services7.arcgis.com/mOBPykOjAyBO2ZKk/arcgis/rest/services/RKI_COVID19/FeatureServer/0/query?where=IdLandkreis%20%3D%20'05515'&outFields=Landkreis,AnzahlFall,AnzahlTodesfall,IdLandkreis,NeuerFall,NeuerTodesfall,Refdatum,NeuGenesen,AnzahlGenesen,Meldedatum,Datenstand&returnGeometry=false&outSR=4326&f=json",
+    accept_json()
+    )
+return_json <- content(return_json, type="application/json")
+
+df <- lapply(return_json$features, function(x) {
+    return(c(
+        x$attributes$NeuerTodesfall,
+        x$attributes$AnzahlTodesfall, 
+        x$attributes$NeuerFall,
+        x$attributes$AnzahlFall,
+        x$attributes$NeuGenesen,
+        x$attributes$AnzahlGenesen,
+        x$attributes$Meldedatum
+        ))
+}) %>% 
+    do.call(rbind, .) %>% 
+    as.data.frame(.) %>% 
+    rename(
+        NeuerTodesfall = 1,
+        AnzahlTodesfall = 2,
+        NeuerFall = 3, 
+        AnzahlFall = 4,
+        NeuGenesen = 5,
+        AnzahlGenesen = 6,
+        Meldedatum = 7
+    ) %>% 
+    mutate(Meldedatum_date = lubridate::as_datetime(as.numeric(Meldedatum/1000))) %>% 
+    arrange(-Meldedatum) %>% 
+    mutate(id = 1:n()) %>% 
+    relocate(id) %>% 
+    group_by(Meldedatum_date) %>% 
+    summarise(
+        cases = sum(AnzahlFall),
+        deaths = sum(AnzahlTodesfall),
+        recovered = sum(AnzahlGenesen)
+    ) %>% 
+    arrange(Meldedatum_date) %>% 
+    mutate(i = zoo::rollsum(cases, k = 7, align = "right", fill = 0)) %>% 
+    mutate(i = (i/population)*100000) %>% 
+    mutate(across(c(cases, deaths, recovered), cumsum, .names = "{col}_kum")) %>% 
+    arrange(desc(Meldedatum_date)) %>% 
+    rename(sieben_tage_inzidenz = i)
+
+total_cases <- sum(df$cases)
+total_deceased <- sum(df$deaths)
+total_recovered <- sum(df$recovered)
+current_cases <- total_cases - (total_deceased + total_recovered)
+death_rate_percent <- (total_deceased/total_cases)*100
+
+fig.inzidenz <- df %>% 
+    ggplot(aes(x = Meldedatum_date, y = sieben_tage_inzidenz)) +
+    geom_hline(yintercept = 50, color = "#bf0000", size = 0.25) +
+    geom_hline(yintercept = 35, color = "#e80000", size = 0.25) +
+    geom_line() +
+    labs(
+        title = "7-Tage-Inzidenz für Münster über Zeit",
+        y = "7-Tage-Inzidenz",
+        x = "Datum"
+    ) +
+    theme_minimal()
+
+fig.cases <- df %>% 
+    pivot_longer(ends_with("_kum")) %>% 
+    mutate(name = factor(
+        name, 
+        levels = c("cases_kum", "recovered_kum", "deaths_kum"),
+        labels = c("Fälle", "Genesen", "Verstorben")
+    )) %>% 
+    ggplot(aes(x = Meldedatum_date, y = value, fill = name)) +
+    geom_area(position = position_dodge(width = 1)) +
+    scale_fill_manual(values = c("#e41a1c", "#4daf4a", "black")) +
+    labs(
+        title = "7-Tage-Inzidenz für Münster über Zeit",
+        y = "Kumulierte Fälle",
+        x = "Datum",
+        fill = "Typ"
+    ) +
+    theme_minimal()
+```
+
+Die aktuelle 7-Tage-Inzidenz für Münster beträgt ```r round(cases7_per_100k, 2)``` und es sind gerade ```r current_cases``` Personen an COVID-19 erkrankt. Insgesamt sind seit März 2020 ```r total_cases``` Personen an COVID-19 erkrankt, wobei davon ingesamt ```r total_recovered``` Personen wieder genesen und ```r total_deceased``` verstorben sind.
+
+```{r echo=FALSE, out.width = "98%", out.height= "500px"}
+ggplotly(fig.inzidenz, tooltip = "y", dynamicTicks = TRUE)
+ggplotly(fig.cases, tooltip = "y", dynamicTicks = TRUE)
+```
+<hr>
+Alle Daten stammen aus dem [COVID-19 Datenhub](https://npgeo-corona-npgeo-de.hub.arcgis.com), aktueller Stand: `r last_updated`.
