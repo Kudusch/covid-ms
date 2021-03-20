@@ -117,9 +117,11 @@ fig.cases <- df %>%
 
 Die aktuelle 7-Tage-Inzidenz für Münster beträgt ```r round(cases7_per_100k, 2)``` und es sind gerade ```r current_cases``` Personen an COVID-19 erkrankt. Insgesamt sind seit März 2020 ```r total_cases``` Personen an COVID-19 erkrankt, wobei davon ingesamt ```r total_recovered``` Personen wieder genesen und ```r total_deceased``` verstorben sind.
 
-```{r echo=FALSE, out.width = "98%", out.height= "500px"}
-ggplotly(fig.inzidenz, tooltip = "y", dynamicTicks = TRUE)
-ggplotly(fig.cases, tooltip = "y", dynamicTicks = TRUE)
+```{r echo=FALSE, out.width = "98%", out.height= "350px"}
+ggplotly(fig.inzidenz, tooltip = "y", dynamicTicks = TRUE) %>% plotly::config(displayModeBar = FALSE)
+ggplotly(fig.cases, tooltip = "y", dynamicTicks = TRUE) %>% plotly::config(displayModeBar = FALSE)
 ```
+
 <hr>
+
 Alle Daten stammen aus dem [COVID-19 Datenhub](https://npgeo-corona-npgeo-de.hub.arcgis.com), aktueller Stand: `r last_updated`.
