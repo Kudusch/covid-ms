@@ -38,7 +38,7 @@ return_json <- httr::GET(
     accept_json()
     )
 return_json <- content(return_json, type="application/json")
-
+# https://www.arcgis.com/home/item.html?id=dd4580c810204019a7b8eb3e0b329dd6
 df <- lapply(return_json$features, function(x) {
     return(c(
         x$attributes$NeuerTodesfall,
@@ -115,7 +115,7 @@ fig.cases <- df %>%
     theme_minimal()
 ```
 
-Die aktuelle 7-Tage-Inzidenz für Münster beträgt ```r round(cases7_per_100k, 2)``` und es sind gerade ```r current_cases``` Personen an COVID-19 erkrankt. Insgesamt sind seit März 2020 ```r total_cases``` Personen an COVID-19 erkrankt, wobei davon ingesamt ```r total_recovered``` Personen wieder genesen und ```r total_deceased``` verstorben sind.
+Die aktuelle 7-Tage-Inzidenz für Münster beträgt ```r round(cases7_per_100k, 2)``` und es sind gerade etwa ```r current_cases```[^note_estimated] Personen an COVID-19 erkrankt. Insgesamt sind seit März 2020 ```r total_cases``` Personen an COVID-19 erkrankt, wobei davon ingesamt etwa ```r total_recovered```[\(^1\)](#fn1) Personen wieder genesen und ```r total_deceased``` verstorben sind.
 
 ```{r echo=FALSE, out.width = "98%", out.height= "350px"}
 ggplotly(fig.inzidenz, tooltip = "y", dynamicTicks = TRUE) %>% plotly::config(displayModeBar = FALSE)
@@ -124,4 +124,6 @@ ggplotly(fig.cases, tooltip = "y", dynamicTicks = TRUE) %>% plotly::config(displ
 
 <hr>
 
-Alle Daten stammen aus dem [COVID-19 Datenhub](https://npgeo-corona-npgeo-de.hub.arcgis.com), aktueller Stand: `r last_updated`.
+Alle Daten stammen aus dem [COVID-19 Datenhub](https://npgeo-corona-npgeo-de.hub.arcgis.com), aktueller Stand: `r last_updated`
+
+[^note_estimated]: Die Anzahl der genesenen Personen und damit auch die Anzahl der aktuell infizierten Personen wird nur geschätzt, da das Ende einer Infektion nicht gemeldet wird. Aus der Beschreibung der Daten des RKI Covid-19-Dashboards: „Anhand der dem RKI von den Gesundheitsämtern übermittelten Detailinformationen zu einem Erkrankungsfall wird für jeden Fall eine Dauer der Erkrankung geschätzt. Für Fälle, bei denen nur Symptome angegeben sind, die auf einen leichten Erkrankungsverlauf schließen lassen, wird eine Dauer der Erkrankung von 14 Tagen angenommen. Bei hospitalisierten Fällen oder Fällen mit Symptomen, die auf einen schweren Verlauf hindeuten (z.B. Pneumonie) wird eine Dauer der Erkrankung von 28 Tagen angenommen. Ausgehend vom Beginn der Erkrankung, bzw. wenn der nicht bekannt ist, vom Meldedatum ergibt sich ein geschätztes Datum der Genesung für jeden Fall. Da im Einzelfall auch deutlich längere Erkrankungsverläufe möglich sind, bzw. die hier genutzten Informationen nicht bei allen Fällen dem RKI übermittelt werden, sind die so berechneten Daten nur grobe Schätzungen für die Anzahl der Genesenen und sollten daher auch nur unter Berücksichtigung dieser Limitationen verwendet werden.“
