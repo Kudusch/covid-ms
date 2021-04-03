@@ -85,7 +85,8 @@ current_cases <- total_cases - (total_deceased + total_recovered)
 death_rate_percent <- (total_deceased/total_cases)*100
 
 fig.inzidenz <- df %>% 
-    ggplot(aes(x = Meldedatum_date, y = sieben_tage_inzidenz)) +
+    rename(Datum = Meldedatum_date) %>%
+    ggplot(aes(x = Datum, y = sieben_tage_inzidenz)) +
     geom_hline(yintercept = 50, color = "#bf0000", size = 0.25) +
     geom_hline(yintercept = 35, color = "#e80000", size = 0.25) +
     geom_line() +
@@ -103,7 +104,8 @@ fig.cases <- df %>%
         levels = c("cases_kum", "recovered_kum", "deaths_kum"),
         labels = c("Fälle", "Genesen", "Verstorben")
     )) %>% 
-    ggplot(aes(x = Meldedatum_date, y = value, fill = name)) +
+    rename(Datum = Meldedatum_date) %>%
+    ggplot(aes(x = Datum, y = value, fill = name)) +
     geom_area(position = position_dodge(width = 1)) +
     scale_fill_manual(values = c("#e41a1c", "#4daf4a", "black")) +
     labs(
@@ -118,8 +120,8 @@ fig.cases <- df %>%
 Die aktuelle 7-Tage-Inzidenz für Münster beträgt ```r round(cases7_per_100k, 2)``` und es sind gerade etwa ```r current_cases```[^note_estimated] Personen an COVID-19 erkrankt. Insgesamt sind seit März 2020 ```r total_cases``` Personen an COVID-19 erkrankt, wobei davon ingesamt etwa ```r total_recovered```[\(^1\)](#fn1) Personen wieder genesen und ```r total_deceased``` verstorben sind.
 
 ```{r echo=FALSE, out.width = "98%", out.height= "350px"}
-ggplotly(fig.inzidenz, tooltip = "y", dynamicTicks = TRUE) %>% plotly::config(displayModeBar = FALSE)
-ggplotly(fig.cases, tooltip = "y", dynamicTicks = TRUE) %>% plotly::config(displayModeBar = FALSE)
+ggplotly(fig.inzidenz, tooltip = c("x", "y"), dynamicTicks = TRUE) %>% plotly::config(displayModeBar = FALSE)
+ggplotly(fig.cases, tooltip = c("x", "y"), dynamicTicks = TRUE) %>% plotly::config(displayModeBar = FALSE)
 ```
 
 <hr>
