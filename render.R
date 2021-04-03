@@ -1,5 +1,9 @@
+file_path <- commandArgs()[4]
+file_path <- strsplit(file_path, "=")[[1]][2]
+file_path <- dirname(file_path)
+
 rmarkdown::render(
-    "report.Rmd", 
+    paste0(file_path, "/report.Rmd"), 
     output_format = rmarkdown::html_document(
         theme = NULL,
         mathjax = NULL,
