@@ -1,3 +1,6 @@
 .Rproj.user/
+.Rhistory
 .DS_Store
 index.html
+meta_data/*.csv
+meta_data/*.json
