@@ -11,6 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r, include=FALSE, echo=FALSE}
+options(stringsAsFactors=FALSE)
 library(readr)
 library(magrittr)
 library(dplyr)
@@ -91,7 +92,7 @@ fig.inzidenz <- df %>%
         title = "7-Tage-Inzidenz über Zeit",
         y = "7-Tage-Inzidenz",
         x = "Datum",
-        color = "Stadt"
+        color = ""
     ) +
     theme_minimal()
 
@@ -111,24 +112,24 @@ fig.cases <- df %>%
         title = "Kumulierte Fälle in Münster über Zeit",
         y = "Kumulierte Fälle",
         x = "Datum",
-        fill = "Typ"
+        fill = ""
     ) +
     theme_minimal()
 ```
 
-Das RKI meldet eine 7-Tage-Inzidenz für Münster von ```r round(as.numeric(df.meta[df.meta$county_name == "SK Münster", "cases7_per_100k"]), 2)```[^note_differences]. Es sind gerade etwa ```r current_cases```[^note_estimated] Personen an COVID-19 erkrankt.
+Das RKI meldet eine 7-Tage-Inzidenz für Münster von ```r round(as.numeric(df.meta[df.meta$county_name == "SK Münster", "cases7_per_100k"]), 2)```. Es sind gerade etwa ```r current_cases```[^note_estimated] Personen an COVID-19 erkrankt.
 
-Insgesamt sind seit März 2020 ```r total_cases``` Personen an COVID-19 erkrankt, wobei davon ingesamt etwa ```r total_recovered```[\(^1\)](#fn1) Personen wieder genesen und ```r total_deceased``` verstorben sind. Die Todesrate beträgt für Münster ```r death_rate_percent```%.
+Insgesamt sind seit März 2020 ```r total_cases``` Personen an COVID-19 erkrankt, wobei davon ingesamt etwa ```r total_recovered```[\(^1\)](#fn1) Personen wieder genesen und ```r total_deceased``` verstorben sind. Die Todesrate beträgt für Münster ```r round(death_rate_percent, 2)```%.
 
 ```{r echo=FALSE, out.width = "98%", out.height= "350px"}
-ggplotly(fig.inzidenz, tooltip = c("x", "y"), dynamicTicks = TRUE) %>% plotly::config(displayModeBar = FALSE) %>% plotly::style(visible="legendonly", traces = c(3,4))
-ggplotly(fig.cases, tooltip = c("x", "y"), dynamicTicks = TRUE) %>% plotly::config(displayModeBar = FALSE)
+ggplotly(fig.inzidenz, tooltip = c("x", "y"), dynamicTicks = TRUE) %>% plotly::config(displayModeBar = FALSE) %>% plotly::style(visible="legendonly", traces = c(3,4)) %>% layout(legend = list(orientation = "h", x = 0, y = -0.4))
+ggplotly(fig.cases, tooltip = c("x", "y"), dynamicTicks = TRUE) %>% plotly::config(displayModeBar = FALSE) %>% layout(legend = list(orientation = "h", x = 0, y = -0.5))
+
 ```
 
 <hr>
 
-Alle Daten stammen aus dem [COVID-19 Datenhub](https://npgeo-corona-npgeo-de.hub.arcgis.com), aktueller Stand: `r df.meta[df.meta$county_name == "SK Münster", "last_updated"]`
+Alle Daten stammen aus dem [COVID-19 Datenhub](https://npgeo-corona-npgeo-de.hub.arcgis.com), aktueller Stand: `r df.meta[df.meta$county_name == "SK Münster", "last_updated"]`. Es werden Zahlen aus den Datensätzten [RKI COVID19](https://npgeo-corona-npgeo-de.hub.arcgis.com/datasets/dd4580c810204019a7b8eb3e0b329dd6_0) und [RKI Corona Landkreise](https://npgeo-corona-npgeo-de.hub.arcgis.com/datasets/917fc37a709542548cc3be077a786c17_0) berichtet.
 
 [^note_estimated]: Die Anzahl der genesenen Personen und damit auch die Anzahl der aktuell infizierten Personen wird nur geschätzt, da das Ende einer Infektion nicht gemeldet wird. (s.h. [Disclaimer zu Genesenen](https://www.arcgis.com/home/item.html?id=f10774f1c63e40168479a1feb6c7ca74))
 
-[^note_differences]: Hier werden Zahlen aus den Datensätzten [RKI COVID19](https://npgeo-corona-npgeo-de.hub.arcgis.com/datasets/dd4580c810204019a7b8eb3e0b329dd6_0) und [RKI Corona Landkreise](https://npgeo-corona-npgeo-de.hub.arcgis.com/datasets/917fc37a709542548cc3be077a786c17_0) berichtet. Die 7-Tage-Inzidenz aus den beiden Datensätzen stimmt nicht immer überein.
