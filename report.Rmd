@@ -44,7 +44,7 @@ names(df.meta) <- c("county_id", "county_name", "population", "cases7_per_100k",
 RKI_COVID19 <- read_csv("meta_data/RKI_COVID19.csv")
 
 df <- RKI_COVID19 %>% 
-    filter(IdLandkreis %in% c("05515", "05913", "14713")) %>% 
+    filter(IdLandkreis %in% df.meta$county_id) %>% 
     mutate(Meldedatum = lubridate::parse_date_time(Meldedatum, "%Y/%m/%d %H:%M:%S")) %>% 
     mutate(Meldedatum_date = lubridate::date(Meldedatum)) %>% 
     filter(NeuerFall >= 0) %>% 
@@ -64,7 +64,20 @@ df <- RKI_COVID19 %>%
         recovered
     )
 
-df <- left_join(data.frame(Meldedatum_date = seq(min(df$Meldedatum_date), max(df$Meldedatum_date), by="days")) %>% dplyr::slice(rep(1:n(), 3)) %>% arrange(Meldedatum_date) %>% mutate(county_name = rep(df.meta$county_name, n()/3)), df, by = c("Meldedatum_date", "county_name")) %>% mutate(across(where(is.numeric), ~ tidyr::replace_na(.x, 0))) %>% 
+df <- left_join(
+  data.frame(
+    Meldedatum_date = seq(
+      min(df$Meldedatum_date), 
+      max(df$Meldedatum_date), 
+      by="days")) %>% 
+      dplyr::slice(rep(1:n(), length(df.meta$county_id))) %>% 
+      arrange(Meldedatum_date) %>% 
+      mutate(county_name = rep(
+        df.meta$county_name, 
+        n()/length(df.meta$county_id))), 
+  df, 
+  by = c("Meldedatum_date", "county_name")) %>% 
+    mutate(across(where(is.numeric), ~ tidyr::replace_na(.x, 0))) %>% 
     left_join(df.meta, by = c("county_name")) %>% 
     mutate(population = as.numeric(population)) %>% 
     group_by(county_name) %>% 
@@ -115,6 +128,61 @@ fig.cases <- df %>%
         fill = ""
     ) +
     theme_minimal()
+
+
+df.groups <- RKI_COVID19 %>% 
+    filter(IdLandkreis %in% df.meta$county_id) %>% 
+    mutate(Meldedatum = lubridate::parse_date_time(Meldedatum, "%Y/%m/%d %H:%M:%S")) %>% 
+    mutate(Meldedatum_month = paste(
+        lubridate::year(Meldedatum), 
+        stringr::str_pad(lubridate::month(Meldedatum), 2, "0", side = "left"),
+        sep = "_")) %>% 
+    filter(NeuerFall >= 0) %>% 
+    select(Meldedatum_month, Landkreis, Geschlecht, Altersgruppe, AnzahlFall) %>% 
+    pivot_longer(c(Geschlecht, Altersgruppe)) %>% 
+    slice(rep(1:n(), .$AnzahlFall)) %>%
+    dplyr::group_by(Meldedatum_month, Landkreis) %>% 
+    count(value) %>% 
+    mutate(total = sum(n)/2) %>% 
+    mutate(p = n/total) %>% 
+    ungroup() %>% 
+    rename(county_name = Landkreis) %>% 
+    left_join(df.meta, by = "county_name") %>% 
+    mutate(n_100k = (n/as.numeric(population))*100000)
+
+fig.age_groups <- df.groups %>% 
+    #filter(county_name == "SK Münster") %>% 
+    filter(value != "unbekannt") %>% 
+    filter(!(value %in% c("M", "W"))) %>% 
+    mutate(Meldedatum_month = as.Date(lubridate::parse_date_time(Meldedatum_month, "%Y_%m"))) %>% 
+    ggplot(aes(x = Meldedatum_month, y = n_100k, fill = value)) +
+    facet_grid(rows = vars(county_name)) +
+    geom_bar(stat = "identity", position = position_dodge()) +
+    scale_x_date() +
+    labs(
+        title = "Inzidenz nach Altersgruppen über Zeit",
+        y = "Fälle pro 100.000 Einwohner",
+        x = "Datum",
+        fill = ""
+    ) +
+    theme_minimal()
+
+fig.gender <- df.groups %>% 
+    #filter(county_name == "SK Münster") %>% 
+    filter(value != "unbekannt") %>% 
+    filter((value %in% c("M", "W"))) %>% 
+    mutate(Meldedatum_month = as.Date(lubridate::parse_date_time(Meldedatum_month, "%Y_%m"))) %>% 
+    ggplot(aes(x = Meldedatum_month, y = n_100k, fill = value)) +
+    facet_grid(rows = vars(county_name)) +
+    geom_bar(stat = "identity", position = position_dodge()) +
+    scale_x_date() +
+    labs(
+        title = "Inzidenz nach Geschlecht über Zeit",
+        y = "Fälle pro 100.000 Einwohner",
+        x = "Datum",
+        fill = ""
+    ) +
+    theme_minimal()
 ```
 
 Das RKI meldet eine 7-Tage-Inzidenz für Münster von ```r round(as.numeric(df.meta[df.meta$county_name == "SK Münster", "cases7_per_100k"]), 2)```. Es sind gerade etwa ```r current_cases```[^note_estimated] Personen an COVID-19 erkrankt.
@@ -122,9 +190,22 @@ Das RKI meldet eine 7-Tage-Inzidenz für Münster von ```r round(as.numeric(df.m
 Insgesamt sind seit März 2020 ```r total_cases``` Personen an COVID-19 erkrankt, wobei davon ingesamt etwa ```r total_recovered```[\(^1\)](#fn1) Personen wieder genesen und ```r total_deceased``` verstorben sind. Die Todesrate beträgt für Münster ```r round(death_rate_percent, 2)```%.
 
 ```{r echo=FALSE, out.width = "98%", out.height= "350px"}
-ggplotly(fig.inzidenz, tooltip = c("x", "y"), dynamicTicks = TRUE) %>% plotly::config(displayModeBar = FALSE) %>% plotly::style(visible="legendonly", traces = c(3,4)) %>% layout(legend = list(orientation = "h", x = 0, y = -0.4))
-ggplotly(fig.cases, tooltip = c("x", "y"), dynamicTicks = TRUE) %>% plotly::config(displayModeBar = FALSE) %>% layout(legend = list(orientation = "h", x = 0, y = -0.5))
+ggplotly(fig.inzidenz, tooltip = c("x", "y"), dynamicTicks = TRUE) %>% 
+  plotly::config(displayModeBar = FALSE) %>% 
+  plotly::style(visible="legendonly", traces = c(3,4,5,7,8)) %>% 
+  plotly::layout(legend = list(orientation = "h", x = 0, y = -0.3))
+ggplotly(fig.cases, tooltip = c("x", "y"), dynamicTicks = TRUE) %>% 
+  plotly::config(displayModeBar = FALSE) %>% 
+  plotly::layout(legend = list(orientation = "h", x = 0, y = -0.3))
+```
 
+```{r echo=FALSE, out.width = "98%", out.height= "900px"}
+ggplotly(fig.gender, tooltip = c("x", "y")) %>% 
+    plotly::config(displayModeBar = FALSE) %>% 
+    plotly::layout(legend = list(orientation = "h", x = 0, y = -0.1))
+ggplotly(fig.age_groups, tooltip = c("x", "y")) %>% 
+    plotly::config(displayModeBar = FALSE) %>% 
+    plotly::layout(legend = list(orientation = "h", x = 0, y = -0.1))
 ```
 
 <hr>

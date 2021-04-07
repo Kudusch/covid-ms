@@ -1,8 +1,15 @@
 #!/bin/bash
 
-curl -L https://www.arcgis.com/sharing/rest/content/items/f10774f1c63e40168479a1feb6c7ca74/data > /var/www/html/projects/covid-ms/meta_data/RKI_COVID19.csv
-python3 /var/www/html/projects/covid-ms/get_data.py '14713'
-python3 /var/www/html/projects/covid-ms/get_data.py '05515'
-python3 /var/www/html/projects/covid-ms/get_data.py '05913'
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 
-Rscript /var/www/html/projects/covid-ms/render.R
+curl -L https://www.arcgis.com/sharing/rest/content/items/f10774f1c63e40168479a1feb6c7ca74/data > $DIR/meta_data/RKI_COVID19.csv
+
+python3 get_data.py '14713'
+python3 get_data.py '05515'
+python3 get_data.py '05913'
+python3 get_data.py '03403'
+python3 get_data.py '05334'
+python3 get_data.py '05978'
+
+
+Rscript $DIR/render.R
