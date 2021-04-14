@@ -93,6 +93,7 @@ total_cases <- sum(df[df$county_name == "SK Münster", "cases"])
 total_deceased <- sum(df[df$county_name == "SK Münster", "deaths"])
 total_recovered <- sum(df[df$county_name == "SK Münster", "recovered"])
 current_cases <- total_cases - (total_deceased + total_recovered)
+case_rate_percent <- (current_cases/min(df[df$county_name == "SK Münster", "population"]))*100
 death_rate_percent <- (total_deceased/total_cases)*100
 
 fig.inzidenz <- df %>% 
@@ -185,7 +186,7 @@ fig.gender <- df.groups %>%
     theme_minimal()
 ```
 
-Das RKI meldet eine 7-Tage-Inzidenz für Münster von ```r round(as.numeric(df.meta[df.meta$county_name == "SK Münster", "cases7_per_100k"]), 2)```. Es sind gerade etwa ```r current_cases```[^note_estimated] Personen an COVID-19 erkrankt.
+Das RKI meldet eine 7-Tage-Inzidenz für Münster von ```r round(as.numeric(df.meta[df.meta$county_name == "SK Münster", "cases7_per_100k"]), 2)```. Es sind gerade etwa ```r current_cases```[^note_estimated] Personen an COVID-19 erkrankt (etwa ```r round(case_rate_percent, 2)```% der Münsteraner*innen).
 
 Insgesamt sind seit März 2020 ```r total_cases``` Personen an COVID-19 erkrankt, wobei davon ingesamt etwa ```r total_recovered```[\(^1\)](#fn1) Personen wieder genesen und ```r total_deceased``` verstorben sind. Die Todesrate beträgt für Münster ```r round(death_rate_percent, 2)```%.
 

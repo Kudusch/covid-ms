@@ -11,5 +11,4 @@ python3 $DIR/get_data.py '03403'
 python3 $DIR/get_data.py '05334'
 python3 $DIR/get_data.py '05978'
 
-
 Rscript $DIR/render.R
