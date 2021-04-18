@@ -19,9 +19,16 @@ library(tidyr)
 library(ggplot2)
 library(plotly)
 library(scales)
+library(reactable)
+library(stringr)
 
 county_list <- unique(unlist(lapply(stringr::str_split(list.files("meta_data"), pattern = "_"), `[`, 1)))
-df.meta <- data.frame()
+
+county_id_list <- c()
+population_list <- c()
+cases7_per_100k_list <- c()
+county_name_list <- c()
+last_updated_list <- c()
 for (county in county_list) {
     if (county != "RKI") {
     meta_json <- jsonlite::read_json(paste0("meta_data/", county, "_meta.json"))
@@ -30,16 +37,21 @@ for (county in county_list) {
     county_name <- meta_json$features[[1]]$attributes$county
     last_updated <- meta_json$features[[1]]$attributes$last_update
     last_updated <- substr(last_updated, 1, 10)
-    df.meta <- rbind(df.meta, c(
-        "county_id"=county,
-        "county_name"=county_name,
-        "population"=population,
-        "cases7_per_100k"=cases7_per_100k,
-        "last_updated"=last_updated
-    ))
+    
+    county_id_list <- c(county_id_list, county)
+    population_list <- c(population_list, population)
+    cases7_per_100k_list <- c(cases7_per_100k_list, cases7_per_100k)
+    county_name_list <- c(county_name_list, county_name)
+    last_updated_list <- c(last_updated_list, last_updated)
     }
 }
-names(df.meta) <- c("county_id", "county_name", "population", "cases7_per_100k", "last_updated")
+df.meta <- data.frame(
+  "county_id" = county_id_list,
+  "county_name" = county_name_list,
+  "population" = population_list,
+  "cases7_per_100k" = cases7_per_100k_list,
+  "last_updated" = last_updated_list
+)
 
 RKI_COVID19 <- read_csv("meta_data/RKI_COVID19.csv")
 
@@ -89,15 +101,34 @@ df <- left_join(
     ungroup() %>% 
     rename(sieben_tage_inzidenz = i)
 
-total_cases <- sum(df[df$county_name == "SK Münster", "cases"])
-total_deceased <- sum(df[df$county_name == "SK Münster", "deaths"])
-total_recovered <- sum(df[df$county_name == "SK Münster", "recovered"])
-current_cases <- total_cases - (total_deceased + total_recovered)
-case_rate_percent <- (current_cases/min(df[df$county_name == "SK Münster", "population"]))*100
-death_rate_percent <- (total_deceased/total_cases)*100
+
+df.meta <- df.meta %>% 
+    left_join(
+        df %>% 
+            group_by(county_name) %>% 
+            summarise(
+                total_cases = sum(cases), 
+                total_deceased = sum(deaths), 
+                total_recovered = sum(recovered)
+            ),
+        by = "county_name"
+    ) %>% 
+    mutate(
+        current_cases = total_cases - (total_deceased + total_recovered),
+        case_rate_percent = (current_cases/population)*100,
+        death_rate_percent = (total_deceased/total_cases)*100
+    )
+
+total_cases <- df.meta[df.meta$county_name == "SK Münster", "total_cases"]
+total_deceased <- df.meta[df.meta$county_name == "SK Münster", "total_deceased"]
+total_recovered <- df.meta[df.meta$county_name == "SK Münster", "total_recovered"]
+current_cases <- df.meta[df.meta$county_name == "SK Münster", "current_cases"]
+case_rate_percent <- df.meta[df.meta$county_name == "SK Münster", "case_rate_percent"]
+death_rate_percent <- df.meta[df.meta$county_name == "SK Münster", "death_rate_percent"]
 
 fig.inzidenz <- df %>% 
     rename(Datum = Meldedatum_date) %>%
+    mutate(county_name = stringr::str_replace(county_name, regex(".* "), "")) %>% 
     ggplot(aes(x = Datum, y = sieben_tage_inzidenz, color = county_name)) +
     geom_hline(yintercept = 50, color = "#bf0000", size = 0.25) +
     geom_hline(yintercept = 35, color = "#e80000", size = 0.25) +
@@ -119,6 +150,7 @@ fig.cases <- df %>%
         labels = c("Fälle", "Genesen", "Verstorben")
     )) %>% 
     rename(Datum = Meldedatum_date) %>%
+    mutate(county_name = stringr::str_replace(county_name, regex(".* "), "")) %>% 
     ggplot(aes(x = Datum, y = value, fill = name)) +
     geom_area(position = position_dodge(width = 1)) +
     scale_fill_manual(values = c("#e41a1c", "#4daf4a", "black")) +
@@ -155,11 +187,13 @@ fig.age_groups <- df.groups %>%
     #filter(county_name == "SK Münster") %>% 
     filter(value != "unbekannt") %>% 
     filter(!(value %in% c("M", "W"))) %>% 
-    mutate(Meldedatum_month = as.Date(lubridate::parse_date_time(Meldedatum_month, "%Y_%m"))) %>% 
+    mutate(Meldedatum_month = as.POSIXct(as.Date(lubridate::parse_date_time(Meldedatum_month, "%Y_%m")))) %>%
+    mutate(county_name = stringr::str_replace(county_name, regex(".* "), "")) %>% 
     ggplot(aes(x = Meldedatum_month, y = n_100k, fill = value)) +
     facet_grid(rows = vars(county_name)) +
-    geom_bar(stat = "identity", position = position_dodge()) +
-    scale_x_date() +
+    geom_area() +
+    #scale_x_datetime() +
+    scale_fill_brewer(palette = "Dark2") +
     labs(
         title = "Inzidenz nach Altersgruppen über Zeit",
         y = "Fälle pro 100.000 Einwohner",
@@ -172,11 +206,13 @@ fig.gender <- df.groups %>%
     #filter(county_name == "SK Münster") %>% 
     filter(value != "unbekannt") %>% 
     filter((value %in% c("M", "W"))) %>% 
-    mutate(Meldedatum_month = as.Date(lubridate::parse_date_time(Meldedatum_month, "%Y_%m"))) %>% 
+    mutate(Meldedatum_month = as.Date(lubridate::parse_date_time(Meldedatum_month, "%Y_%m"))) %>%
+    mutate(county_name = stringr::str_replace(county_name, regex(".* "), "")) %>% 
     ggplot(aes(x = Meldedatum_month, y = n_100k, fill = value)) +
     facet_grid(rows = vars(county_name)) +
     geom_bar(stat = "identity", position = position_dodge()) +
-    scale_x_date() +
+    #scale_x_datetime() +
+    scale_fill_manual(values = c("#66a61e", "#7570b3")) +
     labs(
         title = "Inzidenz nach Geschlecht über Zeit",
         y = "Fälle pro 100.000 Einwohner",
@@ -191,9 +227,40 @@ Das RKI meldet eine 7-Tage-Inzidenz für Münster von ```r round(as.numeric(df.m
 Insgesamt sind seit März 2020 ```r total_cases``` Personen an COVID-19 erkrankt, wobei davon ingesamt etwa ```r total_recovered```[\(^1\)](#fn1) Personen wieder genesen und ```r total_deceased``` verstorben sind. Die Todesrate beträgt für Münster ```r round(death_rate_percent, 2)```%.
 
 ```{r echo=FALSE, out.width = "98%", out.height= "350px"}
+df.meta %>% select(
+  county_name, 
+  cases7_per_100k, 
+  current_cases,
+  case_rate_percent,
+  death_rate_percent,
+  total_cases, 
+  total_recovered, 
+  total_deceased,
+) %>% 
+  mutate(county_name = stringr::str_replace(county_name, regex(".* "), "")) %>% 
+  mutate(across(where(is.numeric), round, 2)) %>% 
+  reactable(
+    compact = TRUE, borderless = TRUE, striped = TRUE, highlight = TRUE,
+    columns = list(
+      county_name = colDef(name = "Name", minWidth = 120),
+      cases7_per_100k = colDef(name = "7-Tage-Inzidenz"),
+      current_cases = colDef(name = "Aktuelle Fälle"),
+      case_rate_percent = colDef(name = "Inzidenz"),
+      death_rate_percent = colDef(name = "Todesrate"),
+      total_cases = colDef(name = "Fälle"),
+      total_recovered = colDef(name = "Genesen"),
+      total_deceased = colDef(name = "Verstorben")
+    ),
+    columnGroups = list(
+      colGroup(name = "Insgesamt", columns = c("total_cases", "total_recovered", "total_deceased"))
+    )
+  )
+```
+
+```{r echo=FALSE, out.width = "98%", out.height= "350px"}
 ggplotly(fig.inzidenz, tooltip = c("x", "y"), dynamicTicks = TRUE) %>% 
   plotly::config(displayModeBar = FALSE) %>% 
-  plotly::style(visible="legendonly", traces = c(3,4,5,7,8)) %>% 
+  plotly::style(visible="legendonly", traces = c(3,4,5,6,8,9)) %>% 
   plotly::layout(legend = list(orientation = "h", x = 0, y = -0.3))
 ggplotly(fig.cases, tooltip = c("x", "y"), dynamicTicks = TRUE) %>% 
   plotly::config(displayModeBar = FALSE) %>% 
@@ -204,7 +271,7 @@ ggplotly(fig.cases, tooltip = c("x", "y"), dynamicTicks = TRUE) %>%
 ggplotly(fig.gender, tooltip = c("x", "y")) %>% 
     plotly::config(displayModeBar = FALSE) %>% 
     plotly::layout(legend = list(orientation = "h", x = 0, y = -0.1))
-ggplotly(fig.age_groups, tooltip = c("x", "y")) %>% 
+ggplotly(fig.age_groups, tooltip = c("x", "y"), dynamicTicks = TRUE) %>% 
     plotly::config(displayModeBar = FALSE) %>% 
     plotly::layout(legend = list(orientation = "h", x = 0, y = -0.1))
 ```
