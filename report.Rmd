@@ -22,6 +22,15 @@ library(scales)
 library(reactable)
 library(stringr)
 
+list.age_means <- list(
+  "A00-A04"=mean(0:4),
+  "A05-A14"=mean(5:14),
+  "A15-A34"=mean(15:34),
+  "A35-A59"=mean(35:59),
+  "A60-A79"=mean(60:79),
+  "A80+"=mean(80:99)
+)
+
 county_list <- unique(unlist(lapply(stringr::str_split(list.files("meta_data"), pattern = "_"), `[`, 1)))
 
 county_id_list <- c()
@@ -202,16 +211,48 @@ fig.age_groups <- df.groups %>%
     ) +
     theme_minimal()
 
+fig.mean_age <- RKI_COVID19 %>% 
+    mutate(Meldedatum = lubridate::parse_date_time(Meldedatum, "%Y/%m/%d %H:%M:%S")) %>% 
+    mutate(Meldedatum_month = paste(
+        lubridate::year(Meldedatum), 
+        stringr::str_pad(lubridate::month(Meldedatum), 2, "0", side = "left"),
+        sep = "_")) %>% 
+    mutate(Meldedatum_month = as.POSIXct(as.Date(lubridate::parse_date_time(Meldedatum_month, "%Y_%m")))) %>%
+    filter(NeuerFall >= 0) %>% 
+    select(Meldedatum_month, Altersgruppe, AnzahlFall) %>% 
+    filter(Altersgruppe != "unbekannt") %>% 
+    slice(rep(1:n(), .$AnzahlFall)) %>%
+    mutate(Altersgruppe_num = unlist(lapply(Altersgruppe, function(x) {list.age_means[[x]]}))) %>% 
+    select(Meldedatum_month, Altersgruppe_num) %>% 
+    group_by(Meldedatum_month) %>% 
+    summarise(y = mean(Altersgruppe_num), n = n()) %>% 
+    ungroup() %>% 
+    ggplot(aes(x = Meldedatum_month, y = y, group = 1)) +
+    geom_line() +
+    scale_x_datetime() +
+    labs(
+        title = "Geschätzes Durchschnittsalter der Infizierten über Zeit",
+        y = "Alter",
+        x = "Datum",
+        fill = ""
+    ) +
+    theme_minimal()
+
 fig.gender <- df.groups %>% 
-    #filter(county_name == "SK Münster") %>% 
     filter(value != "unbekannt") %>% 
     filter((value %in% c("M", "W"))) %>% 
-    mutate(Meldedatum_month = as.Date(lubridate::parse_date_time(Meldedatum_month, "%Y_%m"))) %>%
+    mutate(Meldedatum_month = as.POSIXct(as.Date(lubridate::parse_date_time(Meldedatum_month, "%Y_%m")))) %>%
     mutate(county_name = stringr::str_replace(county_name, regex(".* "), "")) %>% 
     ggplot(aes(x = Meldedatum_month, y = n_100k, fill = value)) +
     facet_grid(rows = vars(county_name)) +
-    geom_bar(stat = "identity", position = position_dodge()) +
-    #scale_x_datetime() +
+    geom_bar(stat = "identity", position = position_stack()) +
+    geom_crossbar(aes(
+        y = ((total/population)*100000)/2, 
+        xmin = Meldedatum_month - 10, 
+        xmax = Meldedatum_month + 10),
+        size = .25
+    ) +
+    scale_x_datetime() +
     scale_fill_manual(values = c("#66a61e", "#7570b3")) +
     labs(
         title = "Inzidenz nach Geschlecht über Zeit",
@@ -268,10 +309,12 @@ ggplotly(fig.cases, tooltip = c("x", "y"), dynamicTicks = TRUE) %>%
 ```
 
 ```{r echo=FALSE, out.width = "98%", out.height= "900px"}
-ggplotly(fig.gender, tooltip = c("x", "y")) %>% 
+ggplotly(fig.gender, tooltip = c("x", "y"), dynamicTicks = TRUE) %>% 
     plotly::config(displayModeBar = FALSE) %>% 
     plotly::layout(legend = list(orientation = "h", x = 0, y = -0.1))
-ggplotly(fig.age_groups, tooltip = c("x", "y"), dynamicTicks = TRUE) %>% 
+````
+```{r echo=FALSE, out.width = "98%", out.height= "350px"}
+ggplotly(fig.mean_age, tooltip = c("x", "y"), dynamicTicks = TRUE) %>% 
     plotly::config(displayModeBar = FALSE) %>% 
     plotly::layout(legend = list(orientation = "h", x = 0, y = -0.1))
 ```
