@@ -258,29 +258,38 @@ fig.gender <- df.groups %>%
     labs(
         title = "Inzidenz nach Geschlecht über Zeit",
         y = "Fälle pro 100.000 Einwohner",
-        x = "Datum",
+        x = "Datum (Monat)",
         fill = ""
     ) +
     theme_minimal()
 
-fig.gender <- df.groups %>% 
-    filter(value != "unbekannt") %>% 
-    filter(value %in% c("M", "W")) %>% 
-    mutate(Meldedatum_month = as.POSIXct(as.Date(lubridate::parse_date_time(Meldedatum_month, "%Y_%m")))) %>%
-    mutate(county_name = stringr::str_replace(county_name, regex(".* "), "")) %>% 
-    select(Meldedatum_month, county_name, n, value, total) %>% 
-    group_by(Meldedatum_month, county_name) %>% 
-    mutate(p = n/sum(n)) %>% 
+fig.gender <- RKI_COVID19 %>% 
+    mutate(Meldedatum = lubridate::parse_date_time(Meldedatum, "%Y/%m/%d %H:%M:%S")) %>% 
+    mutate(Meldedatum_week = paste(
+        lubridate::year(Meldedatum), 
+        stringr::str_pad(lubridate::week(Meldedatum)-1, 2, "0", side = "left"),
+        "0",
+        sep = "_")) %>% 
+    mutate(Meldedatum_week = as.POSIXct(lubridate::parse_date_time(Meldedatum_week, "%Y_%U_%w"))) %>%
+    filter(NeuerFall >= 0) %>% 
+    select(Meldedatum_week, Geschlecht, AnzahlFall) %>% 
+    filter(Geschlecht != "unbekannt") %>% 
+    group_by(Meldedatum_week, Geschlecht) %>% 
+    summarise(n = sum(AnzahlFall)) %>% 
     ungroup() %>% 
-    ggplot(aes(x = Meldedatum_month, y = p, color = value)) +
-    facet_grid(rows = vars(county_name)) +
+    group_by(Meldedatum_week) %>% 
+    mutate(p = n/sum(n), total = sum(n)) %>% 
+    ungroup() %>% 
+    filter(n > 100) %>% 
+    ggplot(aes(x = Meldedatum_week, y = p, color = Geschlecht)) +
     geom_line() +
     scale_x_datetime() +
+    scale_y_continuous(labels = scales::percent) +
     scale_color_manual(values = c("#66a61e", "#7570b3")) +
     labs(
         title = "Verteilung des Geschlechts der Infizierten über Zeit",
         y = "%",
-        x = "Datum",
+        x = "Datum (Woche)",
         color = ""
     ) +
     theme_minimal()
@@ -331,12 +340,14 @@ ggplotly(fig.cases, tooltip = c("x", "y"), dynamicTicks = TRUE) %>%
   plotly::layout(legend = list(orientation = "h", x = 0, y = -0.3))
 ```
 
-```{r echo=FALSE, out.width = "98%", out.height= "900px"}
+## Deutschlandweite Trends
+
+```{r echo=FALSE, out.width = "98%", out.height= "350px"}
 ggplotly(fig.gender, tooltip = c("x", "y"), dynamicTicks = TRUE) %>% 
     plotly::config(displayModeBar = FALSE) %>% 
     plotly::layout(legend = list(orientation = "h", x = 0, y = -0.1))
 ````
-Das RKI aggregiert Fälle nach sechs Altersgruppen (`paste(names(list.age_means), collapse = ", ")`). Das tatsächliche Alter der Infizierten kann daher nur geschätzt werden. Das geschieht hier über das theoretische Durchschnittsalter der jeweiligen Altersgruppen (unter Annahme einer gleichmäßigen Verteilung des Alters innerhalb der Gruppe). Für die Altersgruppe "A80+" wird der obere Range der Gruppe auf 99 Jahren gesetzt. So kann für jeden Tag, bei angemessener Fallzahl (n > 100), ein durchschnittliches Alter der gemeldeten Infizierten errechnet werden.
+Das RKI aggregiert Fälle nach sechs Altersgruppen (A00-A04, A05-A14, A15-A34, A35-A59, A60-A79, A80+). Das tatsächliche Alter der Infizierten kann daher nur geschätzt werden. Das geschieht hier über das theoretische Durchschnittsalter der jeweiligen Altersgruppen (unter Annahme einer gleichmäßigen Verteilung des Alters innerhalb der Gruppe). Für die Altersgruppe "A80+" wird der obere Range der Gruppe auf 99 Jahren gesetzt. So kann für jeden Tag, bei angemessener Fallzahl (n > 100), ein durchschnittliches Alter der gemeldeten Infizierten errechnet werden.
 
 ```{r echo=FALSE, out.width = "98%", out.height= "350px"}
 ggplotly(fig.mean_age, tooltip = c("x", "y"), dynamicTicks = TRUE) %>% 
