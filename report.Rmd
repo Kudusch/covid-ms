@@ -139,8 +139,9 @@ fig.inzidenz <- df %>%
     rename(Datum = Meldedatum_date) %>%
     mutate(county_name = stringr::str_replace(county_name, regex(".* "), "")) %>% 
     ggplot(aes(x = Datum, y = sieben_tage_inzidenz, color = county_name)) +
+    geom_hline(yintercept = 100, color = "#bf0000", size = 0.25) +
     geom_hline(yintercept = 50, color = "#bf0000", size = 0.25) +
-    geom_hline(yintercept = 35, color = "#e80000", size = 0.25) +
+    geom_hline(yintercept = 35, color = "#bf0000", size = 0.25) +
     geom_line() +
     labs(
         title = "7-Tage-Inzidenz über Zeit",
@@ -333,7 +334,7 @@ df.meta %>% select(
 ```{r echo=FALSE, out.width = "98%", out.height= "350px"}
 ggplotly(fig.inzidenz, tooltip = c("x", "y"), dynamicTicks = TRUE) %>% 
   plotly::config(displayModeBar = FALSE) %>% 
-  plotly::style(visible="legendonly", traces = c(3,4,5,6,8,9)) %>% 
+  plotly::style(visible="legendonly", traces = c(4,5,6,7,9,10)) %>% 
   plotly::layout(legend = list(orientation = "h", x = 0, y = -0.3))
 ggplotly(fig.cases, tooltip = c("x", "y"), dynamicTicks = TRUE) %>% 
   plotly::config(displayModeBar = FALSE) %>% 
