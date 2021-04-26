@@ -312,7 +312,7 @@ df.meta %>% select(
   total_deceased,
 ) %>% 
   mutate(county_name = stringr::str_replace(county_name, regex(".* "), "")) %>% 
-  mutate(across(where(is.numeric), round, 2)) %>% 
+  mutate(across(where(is.numeric), ~ format(round(.x, 2), nsmall = 2))) %>% 
   reactable(
     compact = TRUE, borderless = TRUE, striped = TRUE, highlight = TRUE,
     columns = list(
