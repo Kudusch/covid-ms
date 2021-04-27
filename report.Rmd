@@ -402,9 +402,9 @@ ggplotly(fig.inzidenz, tooltip = c("x", "y"), dynamicTicks = TRUE) %>%
   plotly::config(displayModeBar = FALSE) %>% 
   plotly::style(visible="legendonly", traces = c(4,5,6,7,9,10)) %>% 
   plotly::layout(legend = list(orientation = "h", x = 0, y = -0.3))
-ggplotly(fig.cases, tooltip = c("x", "y"), dynamicTicks = TRUE) %>% 
-  plotly::config(displayModeBar = FALSE) %>% 
-  plotly::layout(legend = list(orientation = "h", x = 0, y = -0.3))
+# ggplotly(fig.cases, tooltip = c("x", "y"), dynamicTicks = TRUE) %>% 
+#  plotly::config(displayModeBar = FALSE) %>% 
+#  plotly::layout(legend = list(orientation = "h", x = 0, y = -0.3))
 ```
 
 ```{r, include=FALSE, echo=FALSE}
@@ -439,6 +439,8 @@ fig.notbremse <- df.gemeldet %>%
     ) +
     theme_minimal()
 ```
+
+## Notbremse
 
 Die Notbremse ```r df.notbremse[df.notbremse["county_name"] == "Münster","notbremse"]``` für Münster. Laut den täglich gemeldeten Daten liegt die 7-Tage-Inzidenz für Münster seit ```r df.notbremse[df.notbremse["county_name"] == "Münster","reported"]``` Tagen über 100. Laut der vom RKI berechneten Daten (inklusiver der nachgemeldeten Fälle), liegt die 7-Tage-Inzidenz für Münster seit ```r df.notbremse[df.notbremse["county_name"] == "Münster","calculated"]``` Tagen über 100.
 
