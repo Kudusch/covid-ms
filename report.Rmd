@@ -12,6 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r, include=FALSE, echo=FALSE}
 options(stringsAsFactors=FALSE)
+options(OutDec = ",")
 library(readr)
 library(magrittr)
 library(dplyr)
@@ -229,10 +230,10 @@ fig.mean_age <- RKI_COVID19 %>%
     mutate(Altersgruppe_num = unlist(lapply(Altersgruppe, function(x) {list.age_means[[x]]}))) %>% 
     select(Meldedatum, Altersgruppe_num) %>% 
     group_by(Meldedatum) %>% 
-    summarise(y = mean(Altersgruppe_num), n = n()) %>% 
+    summarise(Alter = mean(Altersgruppe_num), n = n()) %>% 
     ungroup() %>% 
     filter(n > 100) %>% 
-    ggplot(aes(x = Meldedatum, y = y, group = 1)) +
+    ggplot(aes(x = Meldedatum, y = Alter, group = 1)) +
     geom_line() +
     scale_x_datetime() +
     labs(
@@ -282,10 +283,10 @@ fig.gender <- RKI_COVID19 %>%
     summarise(n = sum(AnzahlFall)) %>% 
     ungroup() %>% 
     group_by(Meldedatum_week) %>% 
-    mutate(p = n/sum(n), total = sum(n)) %>% 
+    mutate(Anteil = n/sum(n), total = sum(n)) %>% 
     ungroup() %>% 
     filter(n > 100) %>% 
-    ggplot(aes(x = Meldedatum_week, y = p, color = Geschlecht)) +
+    ggplot(aes(x = Meldedatum_week, y = Anteil, color = Geschlecht)) +
     geom_line() +
     scale_x_datetime() +
     scale_y_continuous(labels = scales::percent) +
@@ -429,18 +430,19 @@ fig.notbremse <- df.gemeldet %>%
     filter(county_name == "SK Münster") %>% 
     #filter(!is.na(i_calculated)) %>% 
     mutate(county_name = stringr::str_replace(county_name, regex(".* "), "")) %>% 
+    rename(berechnet = i_calculated, gemeldet = i_reported) %>%
     ggplot() +
     geom_bar(
-        aes(fill = i_reported > 100, y = i_reported, x = Meldedatum_date),
+        aes(fill = gemeldet > 100, y = gemeldet, x = Meldedatum_date),
         stat = "identity"
     ) +
     scale_fill_manual(values = c("#a55757", "#8e0404")) +
     geom_point(
         aes(
             x = Meldedatum_date, 
-            y = i_calculated,
-            fill = i_calculated > 100,
-            color = i_calculated > 100),
+            y = berechnet,
+            fill = berechnet > 100,
+            color = berechnet > 100),
         shape = 23
     ) +
     geom_hline(yintercept = 100, color = "black", size = 0.25) +
