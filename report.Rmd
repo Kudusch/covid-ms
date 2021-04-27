@@ -303,6 +303,22 @@ Das RKI meldet eine 7-Tage-Inzidenz für Münster von ```r round(as.numeric(df.m
 
 Insgesamt sind seit März 2020 ```r total_cases``` Personen an COVID-19 erkrankt, wobei davon insgesamt etwa ```r total_recovered```[\(^1\)](#fn1) Personen wieder genesen und ```r total_deceased``` verstorben sind. Die Todesrate beträgt für Münster ```r round(death_rate_percent, 2)```%.
 
+```{r, include=FALSE, echo=FALSE}
+df.impfzahlen <- read_table2("meta_data/vacc_numbers.csv", col_names = FALSE, col_types = cols(X2 = col_character(), X3 = col_character())) %>% 
+    rename(teil = X2, voll = X3) %>% 
+    mutate(place = str_match_all(X1, "meta_data/(.*).txt:Münster")) %>%
+    mutate(place = unlist(lapply(place, `[`, 2))) %>% 
+    select(place, teil, voll) %>% 
+    mutate(across(c(teil, voll), ~ str_replace(.x, "\\.", ""))) %>% 
+    mutate(across(c(teil, voll), as.numeric))
+
+population_factor <- round((sum(df.impfzahlen$teil) + 13800 + df.meta[df.meta$county_name == "SK Münster", "total_recovered"]) / df.meta[df.meta$county_name == "SK Münster", "population"]*100,2)
+population_immune <- (sum(df.impfzahlen$teil) + 13800 + df.meta[df.meta$county_name == "SK Münster", "total_recovered"])
+incidence_factor <- df.meta[df.meta$county_name == "SK Münster", "population"]/(df.meta[df.meta$county_name == "SK Münster", "population"]-population_immune)
+```
+
+In Münster sind etwa ```r format(population_immune)``` Personen zumindest teilweise gegen COVID-19 immun[^note_immune]. Damit ist die tatsächliche 7-Tage-Inzidenz um einen Faktor ```r round(incidence_factor, 2)``` höher und liegt etwa bei ```r round(as.numeric(df.meta[df.meta$county_name == "SK Münster", "cases7_per_100k"])*incidence_factor, 2)```.
+
 ```{r echo=FALSE, out.width = "98%", out.height= "350px"}
 df.gemeldet <- openxlsx::read.xlsx(
     "meta_data/Fallzahlen_Kum_Tab.xlsx",
@@ -478,4 +494,6 @@ ggplotly(fig.mean_age, tooltip = c("x", "y"), dynamicTicks = TRUE) %>%
 Alle Daten stammen aus dem [COVID-19 Datenhub](https://npgeo-corona-npgeo-de.hub.arcgis.com), aktueller Stand: `r df.meta[df.meta$county_name == "SK Münster", "last_updated"]`. Es werden Zahlen aus den Datensätzen [RKI COVID19](https://npgeo-corona-npgeo-de.hub.arcgis.com/datasets/dd4580c810204019a7b8eb3e0b329dd6_0) und [RKI Corona Landkreise](https://npgeo-corona-npgeo-de.hub.arcgis.com/datasets/917fc37a709542548cc3be077a786c17_0) berichtet.
 
 [^note_estimated]: Die Anzahl der genesenen Personen und damit auch die Anzahl der aktuell infizierten Personen wird nur geschätzt, da das Ende einer Infektion nicht gemeldet wird. (s.h. [Disclaimer zu Genesenen](https://www.arcgis.com/home/item.html?id=f10774f1c63e40168479a1feb6c7ca74))
+
+[^note_immune]: Diese Zahl bezieht sich auf die Anzahl der Personen, die entweder bereits eine Erstimpfungen erhalten haben oder an COVID-19 erkrankt waren und wieder genesen sind. Die Daten zu dieser Schätzung stammen aus dem [Impfbericht der Kassenärztliche Vereinigung Westfalen-Lippe](https://www.corona-kvwl.de/praxisinformationen/corona-schutzimpfung/impfberichte) und der [Meldung der Stadt Münster](http://www.presse-service.de/data.aspx/static/1069746.html) zu den in Krankenhäusern geimpften Personen.
 
