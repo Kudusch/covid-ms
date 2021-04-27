@@ -21,6 +21,8 @@ library(plotly)
 library(scales)
 library(reactable)
 library(stringr)
+library(lubridate)
+library(openxlsx)
 
 list.age_means <- list(
   "A00-A04"=mean(0:4),
@@ -31,7 +33,8 @@ list.age_means <- list(
   "A80+"=mean(80:99)
 )
 
-county_list <- unique(unlist(lapply(stringr::str_split(list.files("meta_data"), pattern = "_"), `[`, 1)))
+county_list <- stringr::str_split(unlist(lapply(stringr::str_split(list.files("meta_data"), "\\."), function(x) {if (x[2] == "json") {x[1]}})), "_")
+county_list <- unique(unlist(lapply(county_list, `[`, 1)))
 
 county_id_list <- c()
 population_list <- c()
@@ -301,6 +304,63 @@ Das RKI meldet eine 7-Tage-Inzidenz für Münster von ```r round(as.numeric(df.m
 Insgesamt sind seit März 2020 ```r total_cases``` Personen an COVID-19 erkrankt, wobei davon insgesamt etwa ```r total_recovered```[\(^1\)](#fn1) Personen wieder genesen und ```r total_deceased``` verstorben sind. Die Todesrate beträgt für Münster ```r round(death_rate_percent, 2)```%.
 
 ```{r echo=FALSE, out.width = "98%", out.height= "350px"}
+df.gemeldet <- openxlsx::read.xlsx(
+    "meta_data/Fallzahlen_Kum_Tab.xlsx",
+    #sheetName = "LK_7-Tage-Inzidenz",
+    sheet = 7,
+    detectDates = FALSE
+)
+df.gemeldet <- df.gemeldet[2:length(df.gemeldet)]
+list.dates <- strptime(df.gemeldet[1,3:length(df.gemeldet)], "%d.%m.%Y")
+list.dates <- c(
+    as.numeric(list.dates[!is.na(list.dates)]),
+    as.numeric(as.POSIXct(as.numeric(df.gemeldet[1,3:length(df.gemeldet)][is.na(list.dates)]) * (60*60*24), origin="1899-12-30", tz="GMT"))
+)
+list.dates <- c("county_name", "county_id", list.dates)
+df.gemeldet <- df.gemeldet[2:nrow(df.gemeldet),]
+names(df.gemeldet) <- as.character(list.dates)
+df.gemeldet <- df.gemeldet %>% 
+    mutate(across(-c(county_name, county_id), as.numeric)) %>% 
+    tidyr::pivot_longer(-c(county_name, county_id), names_to = "Meldedatum_date", values_to = "gemeldet") %>% 
+    filter(county_id %in% as.character(as.numeric(county_list))) %>% 
+    mutate(Meldedatum_date = lubridate::as_date(as.POSIXlt(as.numeric(Meldedatum_date)-(60*60*24), origin="1970-01-01", tz="Europe/Berlin"))) %>% 
+    select(-county_id) %>% 
+    left_join(
+        select(df, county_name, Meldedatum_date, sieben_tage_inzidenz),
+        by = c("Meldedatum_date", "county_name")
+    ) %>% 
+    rename(
+        i_calculated = sieben_tage_inzidenz,
+        i_reported = gemeldet
+    )
+
+df.notbremse <- df.gemeldet %>% 
+  group_by(county_name) %>% 
+  arrange(desc(Meldedatum_date)) %>% 
+  slice(1:3) %>% 
+  summarise(notbremse = sum(i_reported > 100)==3) %>% 
+  mutate(county_name = stringr::str_replace(county_name, regex(".* "), "")) %>% 
+  mutate(notbremse = ifelse(notbremse, "gilt", "gilt nicht"))
+
+df.notbremse <- left_join(
+  df.gemeldet %>% 
+      arrange(county_name, desc(Meldedatum_date)) %>% 
+      mutate(is_over_100 = i_reported > 100) %>% 
+      group_by(county_name) %>% 
+      group_map(~ c(unique(.x$county_name), match(FALSE, .x$is_over_100)), .keep = TRUE) %>% do.call(rbind, .) %>% as.data.frame(),
+  df.gemeldet %>% 
+      arrange(county_name, desc(Meldedatum_date)) %>% 
+      mutate(is_over_100 = i_calculated > 100) %>% 
+      group_by(county_name) %>% 
+      group_map(~ c(unique(.x$county_name), match(FALSE, .x$is_over_100)), .keep = TRUE) %>% do.call(rbind, .) %>% as.data.frame(),
+  by = "V1"
+) %>% 
+  rename(county_name = V1, reported = V2.x, calculated = V2.y) %>% 
+  mutate(reported = as.numeric(reported)-1) %>% 
+  mutate(calculated = as.numeric(calculated)-1) %>% 
+  mutate(county_name = stringr::str_replace(county_name, regex(".* "), "")) %>% 
+  left_join(df.notbremse, by = "county_name")
+
 df.meta %>% select(
   county_name, 
   cases7_per_100k, 
@@ -312,21 +372,27 @@ df.meta %>% select(
   total_deceased,
 ) %>% 
   mutate(county_name = stringr::str_replace(county_name, regex(".* "), "")) %>% 
-  mutate(across(where(is.numeric), ~ format(round(.x, 2), nsmall = 2))) %>% 
+  mutate(across(c(death_rate_percent, case_rate_percent, cases7_per_100k), ~ format(round(.x, 2), nsmall = 2))) %>% 
+  left_join(df.notbremse, by = "county_name") %>% 
+  relocate(notbremse, .after = county_name) %>% 
   reactable(
     compact = TRUE, borderless = TRUE, striped = TRUE, highlight = TRUE,
     columns = list(
-      county_name = colDef(name = "Name", minWidth = 120),
-      cases7_per_100k = colDef(name = "7-Tage-Inzidenz"),
-      current_cases = colDef(name = "Aktuelle Fälle"),
-      case_rate_percent = colDef(name = "Inzidenz"),
-      death_rate_percent = colDef(name = "Todesrate"),
-      total_cases = colDef(name = "Fälle"),
-      total_recovered = colDef(name = "Genesen"),
-      total_deceased = colDef(name = "Verstorben")
+      county_name = colDef(name = "Name", minWidth = 120, align = "left"),
+      notbremse = colDef(name = "Notbremse", align = "center"),
+      cases7_per_100k = colDef(name = "7-Tage-Inzidenz", align = "right"),
+      current_cases = colDef(name = "Aktuelle Fälle", align = "right"),
+      case_rate_percent = colDef(name = "Inzidenz", align = "right"),
+      death_rate_percent = colDef(name = "Todesrate", align = "right"),
+      total_cases = colDef(name = "Fälle", align = "right"),
+      total_recovered = colDef(name = "Genesen", align = "right"),
+      total_deceased = colDef(name = "Verstorben", align = "right"),
+      calculated = colDef(name = "Errechnet", align = "right"),
+      reported = colDef(name = "Gemeldet", align = "right")
     ),
     columnGroups = list(
-      colGroup(name = "Insgesamt", columns = c("total_cases", "total_recovered", "total_deceased"))
+      colGroup(name = "Insgesamt", columns = c("total_cases", "total_recovered", "total_deceased")),
+      colGroup(name = "Tage mit Inzidenz > 100", columns = c("calculated", "reported", "total_deceased"))
     )
   )
 ```
@@ -340,6 +406,55 @@ ggplotly(fig.cases, tooltip = c("x", "y"), dynamicTicks = TRUE) %>%
   plotly::config(displayModeBar = FALSE) %>% 
   plotly::layout(legend = list(orientation = "h", x = 0, y = -0.3))
 ```
+
+```{r, include=FALSE, echo=FALSE}
+fig.notbremse <- df.gemeldet %>% 
+    filter(Meldedatum_date >= (as_date(now())-15)) %>% 
+    filter(county_name == "SK Münster") %>% 
+    #filter(!is.na(i_calculated)) %>% 
+    mutate(county_name = stringr::str_replace(county_name, regex(".* "), "")) %>% 
+    ggplot() +
+    geom_bar(
+        aes(fill = i_reported > 100, y = i_reported, x = Meldedatum_date),
+        stat = "identity"
+    ) +
+    scale_fill_manual(values = c("#a55757", "#8e0404")) +
+    geom_point(
+        aes(
+            x = Meldedatum_date, 
+            y = i_calculated,
+            fill = i_calculated > 100,
+            color = i_calculated > 100),
+        shape = 23
+    ) +
+    geom_hline(yintercept = 100, color = "black", size = 0.25) +
+    scale_color_manual(values = c("#a58484", "#330101")) +
+    #facet_grid(vars(county_name)) +
+    labs(
+        title = "Gemeldete und errechnete 7-Tage-Inzidenz für Münster",
+        y = "7-Tage-Inzidenz",
+        x = "Datum (Woche)",
+        color = "",
+        fill = ""
+    ) +
+    theme_minimal()
+```
+
+Die Notbremse ```r df.notbremse[df.notbremse["county_name"] == "Münster","notbremse"]``` für Münster. Laut den täglich gemeldeten Daten liegt die 7-Tage-Inzidenz für Münster seit ```r df.notbremse[df.notbremse["county_name"] == "Münster","reported"]``` Tagen über 100. Laut der vom RKI berechneten Daten (inklusiver der nachgemeldeten Fälle), liegt die 7-Tage-Inzidenz für Münster seit ```r df.notbremse[df.notbremse["county_name"] == "Münster","calculated"]``` Tagen über 100.
+
+```{r echo=FALSE, out.width = "98%", out.height= "350px"}
+ggplotly(fig.notbremse, tooltip = c("x", "y"), dynamicTicks = TRUE) %>% 
+    plotly::config(displayModeBar = FALSE) %>% 
+    plotly::layout(
+        showlegend = FALSE,
+        selectdirection = "h",
+        title = list(text = paste0('Gemeldete und errechnete 7-Tage-Inzidenz für Münster',
+                                    '<br>',
+                                    '<sup>',
+                                    'Gemeldete Inzidenz als Balken und und errechnete Inzidenz als Rauten',
+                                    '</sup>'))
+    )
+````
 
 ## Deutschlandweite Trends
 
