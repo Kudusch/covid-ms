@@ -352,21 +352,18 @@ df.gemeldet <- df.gemeldet %>%
     )
 
 f.check_notbremse <- function(x) {
-    if (str_detect(x[2], "1{3,}")) {
-        if (str_detect(x[2], "0{5,}$")) {
-            return(c(x[1], FALSE))
-        } else {
-            return(c(x[1], TRUE))
-        }
+    if (str_detect(x[2], "1{3}(?!0{5,}|1)")) {
+        return(c(x[1], TRUE))
     } else {
         return(c(x[1], FALSE))
     }
 }
 
 df.notbremse <- df.gemeldet %>% 
+    filter(Meldedatum_date >= "2021-04-21") %>% 
     group_by(county_name) %>% 
     arrange(desc(Meldedatum_date)) %>% 
-    group_map(~ c(unique(.x$county_name), paste(as.numeric(.x$i_reported[1:8] > 100), collapse = "")), .keep = T) %>% 
+    group_map(~ c(unique(.x$county_name), paste(as.numeric(.x$i_reported > 100), collapse = "")), .keep = T) %>% 
     lapply(., f.check_notbremse) %>% 
     do.call(rbind, .) %>% 
     as.data.frame(.) %>%
