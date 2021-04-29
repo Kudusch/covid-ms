@@ -34,4 +34,3 @@ rm $DIR/meta_data/*.pdf $DIR/meta_data/*.png $DIR/meta_data/*.txt
 
 # Render report
 Rscript $DIR/render.R
-
