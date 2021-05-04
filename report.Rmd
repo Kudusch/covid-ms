@@ -287,7 +287,13 @@ fig.inzidenz_nation_wide <- rbind(
     rename(Datum = Meldedatum_date) %>%
     mutate(Bundesland = factor(Bundesland, levels = c("Gesamt", sort(names(list.bundeslaender))))) %>% 
     rename(Gruppe = Bundesland) %>% 
-    ggplot(aes(x = Datum, y = sieben_tage_inzidenz, color = Gruppe)) +
+    ggplot(aes(
+        x = Datum, 
+        y = sieben_tage_inzidenz, 
+        color = Gruppe, 
+        group = Gruppe, 
+        text = paste(Gruppe, format(round(sieben_tage_inzidenz, 2), nsmall = 2), sep = ": ")
+    )) +
     scale_color_manual(values = c(
         "#000000",
         "#1B9E77",
@@ -321,7 +327,7 @@ fig.inzidenz_nation_wide <- rbind(
 ```
 
 ```{r echo=FALSE, out.width = "98%", out.height= "350px"}
-ggplotly(fig.inzidenz_nation_wide, tooltip = c("x", "y", "Gruppe"), dynamicTicks = TRUE) %>% 
+ggplotly(fig.inzidenz_nation_wide, tooltip = c("x", "text"), dynamicTicks = TRUE) %>% 
     plotly::config(displayModeBar = FALSE) %>% 
     plotly::style(visible="legendonly", traces = c(5:20)) %>% 
     plotly::layout(legend = list(orientation = "h", x = 0, y = -0.3))

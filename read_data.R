@@ -187,7 +187,7 @@ f.check_notbremse <- function(x) {
 df.notbremse <- df.gemeldet %>% 
     filter(Meldedatum_date >= "2021-04-21") %>% 
     group_by(county_name) %>% 
-    arrange(desc(Meldedatum_date)) %>% 
+    arrange(Meldedatum_date) %>% 
     group_map(~ c(unique(.x$county_name), paste(as.numeric(.x$i_reported > 100), collapse = "")), .keep = T) %>% 
     lapply(., f.check_notbremse) %>% 
     do.call(rbind, .) %>% 
