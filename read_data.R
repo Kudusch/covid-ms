@@ -239,3 +239,101 @@ df.notbremse <- left_join(
     mutate(across(-county_name, ~ as.numeric(.x)-1)) %>% 
     mutate(county_name = stringr::str_replace(county_name, regex(".* "), "")) %>% 
     left_join(df.notbremse, by = "county_name")
+
+list.bundeslaender <- list(
+    "Schleswig-Holstein" = 2903773,
+    "Hamburg" = 1847253,
+    "Niedersachsen" = 7993608,
+    "Bremen" = 681202,
+    "Nordrhein-Westfalen" = 17947221,
+    "Hessen" = 6288080,
+    "Rheinland-Pfalz" = 4093903,
+    "Baden-Württemberg" = 11100394,
+    "Bayern" = 13124737,
+    "Saarland" = 986887,
+    "Berlin" = 3669491,          
+    "Brandenburg" = 2521893,
+    "Mecklenburg-Vorpommern" = 1608138,
+    "Sachsen" = 4071971,       
+    "Sachsen-Anhalt" = 2194782,
+    "Thüringen" = 2133378
+)
+
+df.nation_wide <- RKI_COVID19 %>%
+    mutate(Meldedatum = lubridate::parse_date_time(Meldedatum, "%Y/%m/%d %H:%M:%S")) %>% 
+    mutate(Meldedatum_date = lubridate::date(Meldedatum)) %>% 
+    filter(NeuerFall >= 0) %>% 
+    dplyr::group_by(Meldedatum_date) %>% 
+    summarise(
+        cases = sum(AnzahlFall),
+        deaths = sum(AnzahlTodesfall),
+        recovered = sum(AnzahlGenesen),
+        .groups = "drop"
+    ) %>% 
+    select(
+        Meldedatum_date,
+        cases,
+        deaths,
+        recovered
+    )
+
+df.nation_wide <- left_join(
+    data.frame(
+        Meldedatum_date = seq(
+            min(df.nation_wide$Meldedatum_date), 
+            max(df.nation_wide$Meldedatum_date), 
+            by="days")) %>% 
+        arrange(Meldedatum_date),
+    df.nation_wide, 
+    by = c("Meldedatum_date")) %>% 
+    mutate(across(where(is.numeric), ~ tidyr::replace_na(.x, 0))) %>% 
+    mutate(population = 83166711) %>% 
+    arrange(Meldedatum_date) %>% 
+    mutate(i = zoo::rollsum(cases, k = 7, align = "right", fill = 0)) %>% 
+    mutate(i = (i/population)*100000) %>% 
+    mutate(across(c(cases, deaths, recovered), cumsum, .names = "{col}_kum")) %>% 
+    arrange(desc(Meldedatum_date)) %>% 
+    rename(sieben_tage_inzidenz = i)
+
+df.states <- RKI_COVID19 %>% 
+    mutate(Meldedatum = lubridate::parse_date_time(Meldedatum, "%Y/%m/%d %H:%M:%S")) %>% 
+    mutate(Meldedatum_date = lubridate::date(Meldedatum)) %>% 
+    filter(NeuerFall >= 0) %>% 
+    dplyr::group_by(Meldedatum_date, Bundesland) %>% 
+    summarise(
+        cases = sum(AnzahlFall),
+        deaths = sum(AnzahlTodesfall),
+        recovered = sum(AnzahlGenesen),
+        .groups = "drop"
+    ) %>% 
+    select(
+        Bundesland,
+        Meldedatum_date,
+        cases,
+        deaths,
+        recovered
+    )
+
+df.states <- left_join(
+    data.frame(
+        Meldedatum_date = seq(
+            min(df.states$Meldedatum_date), 
+            max(df.states$Meldedatum_date), 
+            by="days")) %>% 
+        dplyr::slice(rep(1:n(), length(list.bundeslaender))) %>% 
+        arrange(Meldedatum_date) %>% 
+        mutate(Bundesland = rep(
+            names(list.bundeslaender), 
+            n()/length(list.bundeslaender))),
+    df.states, 
+    by = c("Meldedatum_date", "Bundesland")) %>%
+    mutate(across(where(is.numeric), ~ tidyr::replace_na(.x, 0))) %>% 
+    mutate(population = unlist(lapply(Bundesland, function(x) {list.bundeslaender[[x]]}))) %>% 
+    group_by(Bundesland) %>% 
+    arrange(Meldedatum_date) %>% 
+    mutate(i = zoo::rollsum(cases, k = 7, align = "right", fill = 0)) %>% 
+    mutate(i = (i/population)*100000) %>% 
+    mutate(across(c(cases, deaths, recovered), cumsum, .names = "{col}_kum")) %>% 
+    arrange(desc(Meldedatum_date)) %>% 
+    ungroup() %>% 
+    rename(sieben_tage_inzidenz = i)

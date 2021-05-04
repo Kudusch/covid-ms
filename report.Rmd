@@ -8,11 +8,11 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+options(stringsAsFactors=FALSE)
 source("read_data.R")
 ```
 
 ```{r, include=FALSE, echo=FALSE}
-options(stringsAsFactors=FALSE)
 options(OutDec = ",")
 
 total_cases <- df.meta[df.meta$county_name == "SK Münster", "total_cases"]
@@ -260,6 +260,9 @@ fig.notbremse <- df.gemeldet %>%
         fill = ""
     ) +
     theme_minimal()
+
+mean_delta_reported_calculated <- mean((df.gemeldet %>% filter(county_name == "SK Münster", !is.na(i_reported)) %>% mutate(delta_p = (i_calculated-i_reported)/i_reported))$delta_p)
+mean_delta_reported_calculated <- format(round(mean_delta_reported_calculated*100, 2), nsmall = 2)
 ```
 
 ## Notbremse
@@ -267,6 +270,8 @@ fig.notbremse <- df.gemeldet %>%
 Die Notbremse ```r df.notbremse[df.notbremse["county_name"] == "Münster","notbremse"]``` für Münster. Laut den täglich gemeldeten Daten liegt die 7-Tage-Inzidenz für Münster seit ```r df.notbremse[df.notbremse["county_name"] == "Münster","reported_over"]``` Tag(en) über 100. Laut der vom RKI berechneten Daten (inklusive der nachgemeldeten Fälle), liegt die 7-Tage-Inzidenz für Münster seit ```r df.notbremse[df.notbremse["county_name"] == "Münster","calculated_over"]``` Tag(en) über 100. 
 
 Laut den täglich gemeldeten Daten liegt die 7-Tage-Inzidenz für Münster seit ```r df.notbremse[df.notbremse["county_name"] == "Münster","reported_under"]``` Tag(en) unter 100. Laut der vom RKI berechneten Daten (inklusiver der nachgemeldeten Fälle), liegt die 7-Tage-Inzidenz für Münster seit ```r df.notbremse[df.notbremse["county_name"] == "Münster","calculated_under"]``` Tag(en) unter 100. 
+
+Die errechnete Inzidenz ist in Münster durchschnittlich um ```r mean_delta_reported_calculated```% höher, als die täglich gemeldete.
 
 ```{r echo=FALSE, out.width = "98%", out.height= "350px"}
 ggplotly(fig.notbremse, tooltip = c("x", "y"), dynamicTicks = TRUE) %>% 
@@ -280,9 +285,57 @@ ggplotly(fig.notbremse, tooltip = c("x", "y"), dynamicTicks = TRUE) %>%
                                     'Gemeldete Inzidenz als Balken und und errechnete Inzidenz als Rauten',
                                     '</sup>'))
     )
-````
+```
 
 ## Deutschlandweite Trends
+
+```{r, include=FALSE, echo=FALSE}
+fig.inzidenz_nation_wide <- rbind(
+    df.states %>% select(Meldedatum_date, sieben_tage_inzidenz, Bundesland),
+    df.nation_wide %>% select(Meldedatum_date, sieben_tage_inzidenz) %>% mutate(Bundesland = "Gesamt")
+) %>% 
+    rename(Datum = Meldedatum_date) %>%
+    mutate(Bundesland = factor(Bundesland, levels = c("Gesamt", sort(names(list.bundeslaender))))) %>% 
+    rename(Gruppe = Bundesland) %>% 
+    ggplot(aes(x = Datum, y = sieben_tage_inzidenz, color = Gruppe)) +
+    scale_color_manual(values = c(
+        "#000000",
+        "#1B9E77",
+        "#D95F02",
+        "#7570B3",
+        "#E7298A",
+        "#66A61E",
+        "#E6AB02",
+        "#A6761D",
+        "#666666",
+        "#66C2A5",
+        "#FC8D62",
+        "#8DA0CB",
+        "#E78AC3",
+        "#A6D854",
+        "#FFD92F",
+        "#E5C494",
+        "#B3B3B3"
+    )) +
+    geom_hline(yintercept = 100, color = "#bf0000", size = 0.25) +
+    geom_hline(yintercept = 50, color = "#bf0000", size = 0.25) +
+    geom_hline(yintercept = 35, color = "#bf0000", size = 0.25) +
+    geom_line() +
+    labs(
+        title = "7-Tage-Inzidenz über Zeit",
+        y = "7-Tage-Inzidenz",
+        x = "Datum",
+        color = ""
+    ) +
+    theme_minimal()
+```
+
+```{r echo=FALSE, out.width = "98%", out.height= "350px"}
+ggplotly(fig.inzidenz_nation_wide, tooltip = c("x", "y", "Gruppe"), dynamicTicks = TRUE) %>% 
+    plotly::config(displayModeBar = FALSE) %>% 
+    plotly::style(visible="legendonly", traces = c(5:20)) %>% 
+    plotly::layout(legend = list(orientation = "h", x = 0, y = -0.3))
+````
 
 ```{r echo=FALSE, out.width = "98%", out.height= "350px"}
 ggplotly(fig.gender, tooltip = c("x", "y"), dynamicTicks = TRUE) %>% 
@@ -299,7 +352,7 @@ ggplotly(fig.mean_age, tooltip = c("x", "y"), dynamicTicks = TRUE) %>%
 
 <hr>
 
-Alle Daten stammen aus dem [COVID-19 Datenhub](https://npgeo-corona-npgeo-de.hub.arcgis.com), aktueller Stand: `r df.meta[df.meta$county_name == "SK Münster", "last_updated"]`. Es werden Zahlen aus den Datensätzen [RKI COVID19](https://npgeo-corona-npgeo-de.hub.arcgis.com/datasets/dd4580c810204019a7b8eb3e0b329dd6_0) und [RKI Corona Landkreise](https://npgeo-corona-npgeo-de.hub.arcgis.com/datasets/917fc37a709542548cc3be077a786c17_0) berichtet.
+Alle Daten stammen aus dem [COVID-19 Datenhub](https://npgeo-corona-npgeo-de.hub.arcgis.com), aktueller Stand: `r df.meta[df.meta$county_name == "SK Münster", "last_updated"]`. Es werden Zahlen aus den Datensätzen [RKI COVID19](https://npgeo-corona-npgeo-de.hub.arcgis.com/datasets/dd4580c810204019a7b8eb3e0b329dd6_0) und [RKI Corona Landkreise](https://npgeo-corona-npgeo-de.hub.arcgis.com/datasets/917fc37a709542548cc3be077a786c17_0) berichtet. Die Anzahl der geimpften Personen wird geschätzt über die [Impfberichte](https://www.corona-kvwl.de/praxisinformationen/corona-schutzimpfung/impfberichte) der kassenärztlichen Vereinigung Westfalen-Lippe. Die täglich berichteten Inzidenzen werden durch den [Bericht des RKI](https://www.rki.de/DE/Content/InfAZ/N/Neuartiges_Coronavirus/Daten/Fallzahlen_Kum_Tab.xlsx) gemäß § 28b IfSG bestimmt. 
 
 [^note_estimated]: Die Anzahl der genesenen Personen und damit auch die Anzahl der aktuell infizierten Personen wird nur geschätzt, da das Ende einer Infektion nicht gemeldet wird. (s.h. [Disclaimer zu Genesenen](https://www.arcgis.com/home/item.html?id=f10774f1c63e40168479a1feb6c7ca74))
 
