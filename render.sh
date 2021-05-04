@@ -22,12 +22,12 @@ python3 $DIR/get_data.py '05978'
 python3 $DIR/get_data.py '05513'
 
 # Download and extract vaccination numbers
-curl https://www.corona-kvwl.de/praxisinformationen/corona-schutzimpfung/impfberichte | grep -io 'fileadmin.*\.pdf' > $DIR/meta_data/files.txt
-while read L; do; echo $L; wget -q -P $DIR/meta_data/ "https://www.corona-kvwl.de/"$L;  done < $DIR/meta_data/files.txt 
-i=1
-for f in $DIR/meta_data/*.pdf; do; echo "$DIR/meta_data/$i_%04d.png"; convert -density 150 -trim $f $DIR/meta_data/%04d_$i.png; i=$((i+1)); done
-for f in $DIR/meta_data/*.png; do; echo $f; tesseract -l deu $f $f ; done 
-grep -i "Münster" $DIR/meta_data/*.txt > $DIR/meta_data/vacc_numbers.csv
+# curl https://www.corona-kvwl.de/praxisinformationen/corona-schutzimpfung/impfberichte | grep -io 'fileadmin.*\.pdf' > $DIR/meta_data/files.txt
+# while read L; do; echo $L; wget -q -P $DIR/meta_data/ "https://www.corona-kvwl.de/"$L;  done < $DIR/meta_data/files.txt 
+# i=1
+# for f in $DIR/meta_data/*.pdf; do; echo "$DIR/meta_data/$i_%04d.png"; convert -density 150 -trim $f $DIR/meta_data/%04d_$i.png; i=$((i+1)); done
+# for f in $DIR/meta_data/*.png; do; echo $f; tesseract -l deu $f $f ; done 
+# grep -i "Münster" $DIR/meta_data/*.txt > $DIR/meta_data/vacc_numbers.csv
 
 # Remove tmp data
 rm $DIR/meta_data/*.pdf $DIR/meta_data/*.png $DIR/meta_data/*.txt

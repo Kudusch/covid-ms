@@ -167,16 +167,6 @@ Das RKI meldet eine 7-Tage-Inzidenz für Münster von ```r round(as.numeric(df.m
 
 Insgesamt sind seit März 2020 ```r total_cases``` Personen an COVID-19 erkrankt, wobei davon insgesamt etwa ```r total_recovered```[\(^1\)](#fn1) Personen wieder genesen und ```r total_deceased``` verstorben sind. Die Todesrate beträgt für Münster ```r round(death_rate_percent, 2)```%.
 
-```{r, include=FALSE, echo=FALSE}
-
-
-population_factor <- round((sum(df.impfzahlen$teil) + 13800 + df.meta[df.meta$county_name == "SK Münster", "total_recovered"]) / df.meta[df.meta$county_name == "SK Münster", "population"]*100,2)
-population_immune <- (sum(df.impfzahlen$teil) + 13800 + df.meta[df.meta$county_name == "SK Münster", "total_recovered"])
-incidence_factor <- df.meta[df.meta$county_name == "SK Münster", "population"]/(df.meta[df.meta$county_name == "SK Münster", "population"]-population_immune)
-```
-
-In Münster sind etwa ```r format(population_immune)``` Personen zumindest teilweise gegen COVID-19 immun[^note_immune]. Damit ist die tatsächliche 7-Tage-Inzidenz um einen Faktor ```r round(incidence_factor, 2)``` höher und liegt etwa bei ```r round(as.numeric(df.meta[df.meta$county_name == "SK Münster", "cases7_per_100k"])*incidence_factor, 2)```.
-
 ```{r echo=FALSE, out.width = "98%", out.height= "350px"}
 
 df.meta %>% select(

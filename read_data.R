@@ -138,13 +138,13 @@ df.groups <- RKI_COVID19 %>%
     mutate(n_100k = (n/as.numeric(population))*100000)
 
 
-df.impfzahlen <- read_table2("meta_data/vacc_numbers.csv", col_names = FALSE, col_types = cols(X2 = col_character(), X3 = col_character())) %>% 
-    rename(teil = X2, voll = X3) %>% 
-    mutate(place = str_match_all(X1, "meta_data/(.*).txt:Münster")) %>%
-    mutate(place = unlist(lapply(place, `[`, 2))) %>% 
-    select(place, teil, voll) %>% 
-    mutate(across(c(teil, voll), ~ str_replace(.x, "\\.", ""))) %>% 
-    mutate(across(c(teil, voll), as.numeric))
+# df.impfzahlen <- read_table2("meta_data/vacc_numbers.csv", col_names = FALSE, col_types = cols(X2 = col_character(), X3 = col_character())) %>% 
+#     rename(teil = X2, voll = X3) %>% 
+#     mutate(place = str_match_all(X1, "meta_data/(.*).txt:Münster")) %>%
+#     mutate(place = unlist(lapply(place, `[`, 2))) %>% 
+#     select(place, teil, voll) %>% 
+#     mutate(across(c(teil, voll), ~ str_replace(.x, "\\.", ""))) %>% 
+#     mutate(across(c(teil, voll), as.numeric))
 
 df.gemeldet <- openxlsx::read.xlsx(
     "meta_data/Fallzahlen_Kum_Tab.xlsx",
