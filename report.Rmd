@@ -20,7 +20,6 @@ fig.inzidenz_nation_wide <- readRDS("data/fig.inzidenz_nation_wide.RDS")
 fig.notbremse <- readRDS("data/fig.notbremse.RDS")
 fig.gender <- readRDS("data/fig.gender.RDS")
 fig.mean_age <- readRDS("data/fig.mean_age.RDS")
-fig.age_groups <- readRDS("data/fig.age_groups.RDS")
 fig.cases <-readRDS("data/fig.cases.RDS")
 fig.inzidenz <- readRDS("data/fig.inzidenz.RDS")
 df.notbremse <- readRDS("data/df.notbremse.RDS")
@@ -139,6 +138,6 @@ ggplotly(fig.mean_age, tooltip = c("x", "y"), dynamicTicks = TRUE) %>%
 
 <hr>
 
-Alle Daten stammen aus dem [COVID-19 Datenhub](https://npgeo-corona-npgeo-de.hub.arcgis.com), aktueller Stand: `r df.meta[df.meta$county_name == "SK Münster", "last_updated"]`. Es werden Zahlen aus den Datensätzen [RKI COVID19](https://npgeo-corona-npgeo-de.hub.arcgis.com/datasets/dd4580c810204019a7b8eb3e0b329dd6_0) und [RKI Corona Landkreise](https://npgeo-corona-npgeo-de.hub.arcgis.com/datasets/917fc37a709542548cc3be077a786c17_0) berichtet. Die Anzahl der geimpften Personen wird geschätzt über die [Impfberichte](https://www.corona-kvwl.de/praxisinformationen/corona-schutzimpfung/impfberichte) der kassenärztlichen Vereinigung Westfalen-Lippe. Die täglich berichteten Inzidenzen werden durch den [Bericht des RKI](https://www.rki.de/DE/Content/InfAZ/N/Neuartiges_Coronavirus/Daten/Fallzahlen_Kum_Tab.xlsx) gemäß § 28b IfSG bestimmt. 
+Alle Daten stammen aus dem [COVID-19 Datenhub](https://npgeo-corona-npgeo-de.hub.arcgis.com), aktueller Stand der Daten: `r df.meta[df.meta$county_name == "SK Münster", "last_updated"]`. Bericht erstellt um `r Sys.time()`. Es werden Zahlen aus den Datensätzen [RKI COVID19](https://npgeo-corona-npgeo-de.hub.arcgis.com/datasets/dd4580c810204019a7b8eb3e0b329dd6_0) und [RKI Corona Landkreise](https://npgeo-corona-npgeo-de.hub.arcgis.com/datasets/917fc37a709542548cc3be077a786c17_0) berichtet. Die Anzahl der geimpften Personen wird geschätzt über die [Impfberichte](https://www.corona-kvwl.de/praxisinformationen/corona-schutzimpfung/impfberichte) der kassenärztlichen Vereinigung Westfalen-Lippe. Die täglich berichteten Inzidenzen werden durch den [Bericht des RKI](https://www.rki.de/DE/Content/InfAZ/N/Neuartiges_Coronavirus/Daten/Fallzahlen_Kum_Tab.xlsx) gemäß § 28b IfSG bestimmt. 
 
 [^note_estimated]: Die Anzahl der genesenen Personen und damit auch die Anzahl der aktuell infizierten Personen wird nur geschätzt, da das Ende einer Infektion nicht gemeldet wird. (s.h. [Disclaimer zu Genesenen](https://www.arcgis.com/home/item.html?id=f10774f1c63e40168479a1feb6c7ca74))

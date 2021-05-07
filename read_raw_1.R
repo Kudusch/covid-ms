@@ -1,3 +1,12 @@
+file_path <- commandArgs()[4]
+file_path <- strsplit(file_path, "=")[[1]][2]
+file_path <- dirname(file_path)
+
+message(getwd())
+setwd(file_path)
+
+message(getwd())
+
 options(stringsAsFactors=FALSE)
 # Read and transform data ----
 library(readr)
@@ -52,7 +61,7 @@ df.meta <- data.frame(
     "last_updated" = last_updated_list
 )
 
-RKI_COVID19 <- read_csv("raw_data/RKI_COVID19.csv")
+RKI_COVID19 <- vroom::vroom("raw_data/RKI_COVID19.csv")
 
 df <- RKI_COVID19 %>% 
     filter(IdLandkreis %in% df.meta$county_id) %>% 
@@ -74,6 +83,67 @@ df <- RKI_COVID19 %>%
         deaths,
         recovered
     )
+
+fig.mean_age <- RKI_COVID19 %>% 
+    mutate(Meldedatum = lubridate::parse_date_time(Meldedatum, "%Y/%m/%d %H:%M:%S")) %>% 
+    mutate(Meldedatum_month = paste(
+        lubridate::year(Meldedatum), 
+        stringr::str_pad(lubridate::month(Meldedatum), 2, "0", side = "left"),
+        sep = "_")) %>% 
+    mutate(Meldedatum_month = as.POSIXct(as.Date(lubridate::parse_date_time(Meldedatum_month, "%Y_%m")))) %>%
+    filter(NeuerFall >= 0) %>% 
+    select(Meldedatum, Altersgruppe, AnzahlFall) %>% 
+    filter(Altersgruppe != "unbekannt") %>% 
+    slice(rep(1:n(), .$AnzahlFall)) %>%
+    mutate(Altersgruppe_num = unlist(lapply(Altersgruppe, function(x) {list.age_means[[x]]}))) %>% 
+    select(Meldedatum, Altersgruppe_num) %>% 
+    group_by(Meldedatum) %>% 
+    summarise(Alter = mean(Altersgruppe_num), n = n()) %>% 
+    ungroup() %>% 
+    filter(n > 100) %>% 
+    ggplot(aes(x = Meldedatum, y = Alter, group = 1)) +
+    geom_line() +
+    scale_x_datetime() +
+    labs(
+        title = "Geschätzes Durchschnittsalter der Infizierten über Zeit",
+        y = "Alter",
+        x = "Datum",
+        fill = ""
+    ) +
+    theme_minimal()
+
+fig.gender <- RKI_COVID19 %>% 
+    mutate(Meldedatum = lubridate::parse_date_time(Meldedatum, "%Y/%m/%d %H:%M:%S")) %>% 
+    mutate(Meldedatum_week = paste(
+        lubridate::year(Meldedatum), 
+        stringr::str_pad(lubridate::week(Meldedatum)-1, 2, "0", side = "left"),
+        "0",
+        sep = "_")) %>% 
+    mutate(Meldedatum_week = as.POSIXct(lubridate::parse_date_time(Meldedatum_week, "%Y_%U_%w"))) %>%
+    filter(NeuerFall >= 0) %>% 
+    select(Meldedatum_week, Geschlecht, AnzahlFall) %>% 
+    filter(Geschlecht != "unbekannt") %>% 
+    group_by(Meldedatum_week, Geschlecht) %>% 
+    summarise(n = sum(AnzahlFall)) %>% 
+    ungroup() %>% 
+    group_by(Meldedatum_week) %>% 
+    mutate(Anteil = n/sum(n), total = sum(n)) %>% 
+    ungroup() %>% 
+    filter(n > 100) %>% 
+    ggplot(aes(x = Meldedatum_week, y = Anteil, color = Geschlecht)) +
+    geom_line() +
+    scale_x_datetime() +
+    scale_y_continuous(labels = scales::percent) +
+    scale_color_manual(values = c("#66a61e", "#7570b3")) +
+    labs(
+        title = "Verteilung des Geschlechts der Infizierten über Zeit",
+        y = "%",
+        x = "Datum (Woche)",
+        color = ""
+    ) +
+    theme_minimal()
+
+rm(RKI_COVID19)
 
 df <- left_join(
     data.frame(
@@ -117,35 +187,6 @@ df.meta <- df.meta %>%
         case_rate_percent = (current_cases/population)*100,
         death_rate_percent = (total_deceased/total_cases)*100
     )
-
-df.groups <- RKI_COVID19 %>% 
-    filter(IdLandkreis %in% df.meta$county_id) %>% 
-    mutate(Meldedatum = lubridate::parse_date_time(Meldedatum, "%Y/%m/%d %H:%M:%S")) %>% 
-    mutate(Meldedatum_month = paste(
-        lubridate::year(Meldedatum), 
-        stringr::str_pad(lubridate::month(Meldedatum), 2, "0", side = "left"),
-        sep = "_")) %>% 
-    filter(NeuerFall >= 0) %>% 
-    select(Meldedatum_month, Landkreis, Geschlecht, Altersgruppe, AnzahlFall) %>% 
-    pivot_longer(c(Geschlecht, Altersgruppe)) %>% 
-    slice(rep(1:n(), .$AnzahlFall)) %>%
-    dplyr::group_by(Meldedatum_month, Landkreis) %>% 
-    count(value) %>% 
-    mutate(total = sum(n)/2) %>% 
-    mutate(p = n/total) %>% 
-    ungroup() %>% 
-    rename(county_name = Landkreis) %>% 
-    left_join(df.meta, by = "county_name") %>% 
-    mutate(n_100k = (n/as.numeric(population))*100000)
-
-
-# df.impfzahlen <- read_table2("meta_data/vacc_numbers.csv", col_names = FALSE, col_types = cols(X2 = col_character(), X3 = col_character())) %>% 
-#     rename(teil = X2, voll = X3) %>% 
-#     mutate(place = str_match_all(X1, "meta_data/(.*).txt:Münster")) %>%
-#     mutate(place = unlist(lapply(place, `[`, 2))) %>% 
-#     select(place, teil, voll) %>% 
-#     mutate(across(c(teil, voll), ~ str_replace(.x, "\\.", ""))) %>% 
-#     mutate(across(c(teil, voll), as.numeric))
 
 df.gemeldet <- openxlsx::read.xlsx(
     "raw_data/Fallzahlen_Kum_Tab.xlsx",
@@ -241,104 +282,6 @@ df.notbremse <- left_join(
     mutate(county_name = stringr::str_replace(county_name, regex(".* "), "")) %>% 
     left_join(df.notbremse, by = "county_name")
 
-list.bundeslaender <- list(
-    "Schleswig-Holstein" = 2903773,
-    "Hamburg" = 1847253,
-    "Niedersachsen" = 7993608,
-    "Bremen" = 681202,
-    "Nordrhein-Westfalen" = 17947221,
-    "Hessen" = 6288080,
-    "Rheinland-Pfalz" = 4093903,
-    "Baden-Württemberg" = 11100394,
-    "Bayern" = 13124737,
-    "Saarland" = 986887,
-    "Berlin" = 3669491,          
-    "Brandenburg" = 2521893,
-    "Mecklenburg-Vorpommern" = 1608138,
-    "Sachsen" = 4071971,       
-    "Sachsen-Anhalt" = 2194782,
-    "Thüringen" = 2133378
-)
-
-df.nation_wide <- RKI_COVID19 %>%
-    mutate(Meldedatum = lubridate::parse_date_time(Meldedatum, "%Y/%m/%d %H:%M:%S")) %>% 
-    mutate(Meldedatum_date = lubridate::date(Meldedatum)) %>% 
-    filter(NeuerFall >= 0) %>% 
-    dplyr::group_by(Meldedatum_date) %>% 
-    summarise(
-        cases = sum(AnzahlFall),
-        deaths = sum(AnzahlTodesfall),
-        recovered = sum(AnzahlGenesen),
-        .groups = "drop"
-    ) %>% 
-    select(
-        Meldedatum_date,
-        cases,
-        deaths,
-        recovered
-    )
-
-df.nation_wide <- left_join(
-    data.frame(
-        Meldedatum_date = seq(
-            min(df.nation_wide$Meldedatum_date), 
-            max(df.nation_wide$Meldedatum_date), 
-            by="days")) %>% 
-        arrange(Meldedatum_date),
-    df.nation_wide, 
-    by = c("Meldedatum_date")) %>% 
-    mutate(across(where(is.numeric), ~ tidyr::replace_na(.x, 0))) %>% 
-    mutate(population = 83166711) %>% 
-    arrange(Meldedatum_date) %>% 
-    mutate(i = zoo::rollsum(cases, k = 7, align = "right", fill = 0)) %>% 
-    mutate(i = (i/population)*100000) %>% 
-    mutate(across(c(cases, deaths, recovered), cumsum, .names = "{col}_kum")) %>% 
-    arrange(desc(Meldedatum_date)) %>% 
-    rename(sieben_tage_inzidenz = i)
-
-df.states <- RKI_COVID19 %>% 
-    mutate(Meldedatum = lubridate::parse_date_time(Meldedatum, "%Y/%m/%d %H:%M:%S")) %>% 
-    mutate(Meldedatum_date = lubridate::date(Meldedatum)) %>% 
-    filter(NeuerFall >= 0) %>% 
-    dplyr::group_by(Meldedatum_date, Bundesland) %>% 
-    summarise(
-        cases = sum(AnzahlFall),
-        deaths = sum(AnzahlTodesfall),
-        recovered = sum(AnzahlGenesen),
-        .groups = "drop"
-    ) %>% 
-    select(
-        Bundesland,
-        Meldedatum_date,
-        cases,
-        deaths,
-        recovered
-    )
-
-df.states <- left_join(
-    data.frame(
-        Meldedatum_date = seq(
-            min(df.states$Meldedatum_date), 
-            max(df.states$Meldedatum_date), 
-            by="days")) %>% 
-        dplyr::slice(rep(1:n(), length(list.bundeslaender))) %>% 
-        arrange(Meldedatum_date) %>% 
-        mutate(Bundesland = rep(
-            names(list.bundeslaender), 
-            n()/length(list.bundeslaender))),
-    df.states, 
-    by = c("Meldedatum_date", "Bundesland")) %>%
-    mutate(across(where(is.numeric), ~ tidyr::replace_na(.x, 0))) %>% 
-    mutate(population = unlist(lapply(Bundesland, function(x) {list.bundeslaender[[x]]}))) %>% 
-    group_by(Bundesland) %>% 
-    arrange(Meldedatum_date) %>% 
-    mutate(i = zoo::rollsum(cases, k = 7, align = "right", fill = 0)) %>% 
-    mutate(i = (i/population)*100000) %>% 
-    mutate(across(c(cases, deaths, recovered), cumsum, .names = "{col}_kum")) %>% 
-    arrange(desc(Meldedatum_date)) %>% 
-    ungroup() %>% 
-    rename(sieben_tage_inzidenz = i)
-
 # Figuers ----
 fig.inzidenz <- df %>% 
     rename(Datum = Meldedatum_date) %>%
@@ -377,109 +320,6 @@ fig.cases <- df %>%
     ) +
     theme_minimal()
 
-
-fig.age_groups <- df.groups %>% 
-    #filter(county_name == "SK Münster") %>% 
-    filter(value != "unbekannt") %>% 
-    filter(!(value %in% c("M", "W"))) %>% 
-    mutate(Meldedatum_month = as.POSIXct(as.Date(lubridate::parse_date_time(Meldedatum_month, "%Y_%m")))) %>%
-    mutate(county_name = stringr::str_replace(county_name, regex(".* "), "")) %>% 
-    ggplot(aes(x = Meldedatum_month, y = n_100k, fill = value)) +
-    facet_grid(rows = vars(county_name)) +
-    geom_area() +
-    #scale_x_datetime() +
-    scale_fill_brewer(palette = "Dark2") +
-    labs(
-        title = "Inzidenz nach Altersgruppen über Zeit",
-        y = "Fälle pro 100.000 Einwohner",
-        x = "Datum",
-        fill = ""
-    ) +
-    theme_minimal()
-
-fig.mean_age <- RKI_COVID19 %>% 
-    mutate(Meldedatum = lubridate::parse_date_time(Meldedatum, "%Y/%m/%d %H:%M:%S")) %>% 
-    mutate(Meldedatum_month = paste(
-        lubridate::year(Meldedatum), 
-        stringr::str_pad(lubridate::month(Meldedatum), 2, "0", side = "left"),
-        sep = "_")) %>% 
-    mutate(Meldedatum_month = as.POSIXct(as.Date(lubridate::parse_date_time(Meldedatum_month, "%Y_%m")))) %>%
-    filter(NeuerFall >= 0) %>% 
-    select(Meldedatum, Altersgruppe, AnzahlFall) %>% 
-    filter(Altersgruppe != "unbekannt") %>% 
-    slice(rep(1:n(), .$AnzahlFall)) %>%
-    mutate(Altersgruppe_num = unlist(lapply(Altersgruppe, function(x) {list.age_means[[x]]}))) %>% 
-    select(Meldedatum, Altersgruppe_num) %>% 
-    group_by(Meldedatum) %>% 
-    summarise(Alter = mean(Altersgruppe_num), n = n()) %>% 
-    ungroup() %>% 
-    filter(n > 100) %>% 
-    ggplot(aes(x = Meldedatum, y = Alter, group = 1)) +
-    geom_line() +
-    scale_x_datetime() +
-    labs(
-        title = "Geschätzes Durchschnittsalter der Infizierten über Zeit",
-        y = "Alter",
-        x = "Datum",
-        fill = ""
-    ) +
-    theme_minimal()
-
-fig.gender <- df.groups %>% 
-    filter(value != "unbekannt") %>% 
-    filter((value %in% c("M", "W"))) %>% 
-    mutate(Meldedatum_month = as.POSIXct(as.Date(lubridate::parse_date_time(Meldedatum_month, "%Y_%m")))) %>%
-    mutate(county_name = stringr::str_replace(county_name, regex(".* "), "")) %>% 
-    ggplot(aes(x = Meldedatum_month, y = n_100k, fill = value)) +
-    facet_grid(rows = vars(county_name)) +
-    geom_bar(stat = "identity", position = position_stack()) +
-    geom_crossbar(aes(
-        y = ((total/population)*100000)/2, 
-        xmin = Meldedatum_month - 10, 
-        xmax = Meldedatum_month + 10),
-        size = .25
-    ) +
-    scale_x_datetime() +
-    scale_fill_manual(values = c("#66a61e", "#7570b3")) +
-    labs(
-        title = "Inzidenz nach Geschlecht über Zeit",
-        y = "Fälle pro 100.000 Einwohner",
-        x = "Datum (Monat)",
-        fill = ""
-    ) +
-    theme_minimal()
-
-fig.gender <- RKI_COVID19 %>% 
-    mutate(Meldedatum = lubridate::parse_date_time(Meldedatum, "%Y/%m/%d %H:%M:%S")) %>% 
-    mutate(Meldedatum_week = paste(
-        lubridate::year(Meldedatum), 
-        stringr::str_pad(lubridate::week(Meldedatum)-1, 2, "0", side = "left"),
-        "0",
-        sep = "_")) %>% 
-    mutate(Meldedatum_week = as.POSIXct(lubridate::parse_date_time(Meldedatum_week, "%Y_%U_%w"))) %>%
-    filter(NeuerFall >= 0) %>% 
-    select(Meldedatum_week, Geschlecht, AnzahlFall) %>% 
-    filter(Geschlecht != "unbekannt") %>% 
-    group_by(Meldedatum_week, Geschlecht) %>% 
-    summarise(n = sum(AnzahlFall)) %>% 
-    ungroup() %>% 
-    group_by(Meldedatum_week) %>% 
-    mutate(Anteil = n/sum(n), total = sum(n)) %>% 
-    ungroup() %>% 
-    filter(n > 100) %>% 
-    ggplot(aes(x = Meldedatum_week, y = Anteil, color = Geschlecht)) +
-    geom_line() +
-    scale_x_datetime() +
-    scale_y_continuous(labels = scales::percent) +
-    scale_color_manual(values = c("#66a61e", "#7570b3")) +
-    labs(
-        title = "Verteilung des Geschlechts der Infizierten über Zeit",
-        y = "%",
-        x = "Datum (Woche)",
-        color = ""
-    ) +
-    theme_minimal()
-
 fig.notbremse <- df.gemeldet %>% 
     filter(Meldedatum_date >= (as_date(now())-15)) %>% 
     filter(county_name == "SK Münster") %>% 
@@ -512,58 +352,13 @@ fig.notbremse <- df.gemeldet %>%
     ) +
     theme_minimal()
 
-fig.inzidenz_nation_wide <- rbind(
-    df.states %>% select(Meldedatum_date, sieben_tage_inzidenz, Bundesland),
-    df.nation_wide %>% select(Meldedatum_date, sieben_tage_inzidenz) %>% mutate(Bundesland = "Gesamt")
-) %>% 
-    rename(Datum = Meldedatum_date) %>%
-    mutate(Bundesland = factor(Bundesland, levels = c("Gesamt", sort(names(list.bundeslaender))))) %>% 
-    rename(Gruppe = Bundesland) %>% 
-    ggplot(aes(
-        x = Datum, 
-        y = sieben_tage_inzidenz, 
-        color = Gruppe, 
-        group = Gruppe, 
-        text = paste(Gruppe, format(round(sieben_tage_inzidenz, 2), nsmall = 2), sep = ": ")
-    )) +
-    scale_color_manual(values = c(
-        "#000000",
-        "#1B9E77",
-        "#D95F02",
-        "#7570B3",
-        "#E7298A",
-        "#66A61E",
-        "#E6AB02",
-        "#A6761D",
-        "#666666",
-        "#66C2A5",
-        "#FC8D62",
-        "#8DA0CB",
-        "#E78AC3",
-        "#A6D854",
-        "#FFD92F",
-        "#E5C494",
-        "#B3B3B3"
-    )) +
-    geom_hline(yintercept = 100, color = "#bf0000", size = 0.25) +
-    geom_hline(yintercept = 50, color = "#bf0000", size = 0.25) +
-    geom_hline(yintercept = 35, color = "#bf0000", size = 0.25) +
-    geom_line() +
-    labs(
-        title = "7-Tage-Inzidenz über Zeit",
-        y = "7-Tage-Inzidenz",
-        x = "Datum",
-        color = ""
-    ) +
-    theme_minimal()
 
-saveRDS(fig.inzidenz_nation_wide, "data/fig.inzidenz_nation_wide.RDS")
 saveRDS(fig.notbremse, "data/fig.notbremse.RDS")
 saveRDS(fig.gender, "data/fig.gender.RDS")
 saveRDS(fig.mean_age, "data/fig.mean_age.RDS")
-saveRDS(fig.age_groups, "data/fig.age_groups.RDS")
 saveRDS(fig.cases, "data/fig.cases.RDS")
 saveRDS(fig.inzidenz, "data/fig.inzidenz.RDS")
 saveRDS(df.notbremse, "data/df.notbremse.RDS")
 saveRDS(df.meta, "data/df.meta.RDS")
 saveRDS(df.gemeldet, "data/df.gemeldet.RDS")
+
