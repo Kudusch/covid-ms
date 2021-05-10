@@ -188,100 +188,6 @@ df.meta <- df.meta %>%
         death_rate_percent = (total_deceased/total_cases)*100
     )
 
-df.gemeldet <- openxlsx::read.xlsx(
-    "raw_data/Fallzahlen_Kum_Tab.xlsx",
-    #sheetName = "LK_7-Tage-Inzidenz",
-    sheet = 7,
-    detectDates = FALSE
-)
-df.gemeldet <- df.gemeldet[2:length(df.gemeldet)]
-list.dates <- strptime(df.gemeldet[1,3:length(df.gemeldet)], "%d.%m.%Y")
-list.dates <- c(
-    as.numeric(list.dates[!is.na(list.dates)]),
-    as.numeric(as.POSIXct(as.numeric(df.gemeldet[1,3:length(df.gemeldet)][is.na(list.dates)]) * (60*60*24), origin="1899-12-30", tz="GMT"))
-)
-list.dates <- c("county_name", "county_id", list.dates)
-df.gemeldet <- df.gemeldet[2:nrow(df.gemeldet),]
-names(df.gemeldet) <- as.character(list.dates)
-df.gemeldet <- df.gemeldet %>% 
-    mutate(across(-c(county_name, county_id), as.numeric)) %>% 
-    tidyr::pivot_longer(-c(county_name, county_id), names_to = "Meldedatum_date", values_to = "gemeldet") %>% 
-    filter(county_id %in% as.character(as.numeric(county_list))) %>% 
-    mutate(Meldedatum_date = lubridate::as_date(as.POSIXlt(as.numeric(Meldedatum_date)-(60*60*24), origin="1970-01-01", tz="Europe/Berlin"))) %>% 
-    select(-county_id) %>% 
-    full_join(
-        select(df, county_name, Meldedatum_date, sieben_tage_inzidenz),
-        by = c("Meldedatum_date", "county_name")
-    ) %>% 
-    rename(
-        i_calculated = sieben_tage_inzidenz,
-        i_reported = gemeldet
-    )
-
-f.check_notbremse <- function(x) { 
-    if (str_detect(x[2], "1{3}(?!0{5,}|1)")) {
-        return(c(x[1], TRUE))
-    } else {
-        return(c(x[1], FALSE))
-    }
-}
-
-df.notbremse <- df.gemeldet %>% 
-    filter(Meldedatum_date >= "2021-04-21") %>% 
-    group_by(county_name) %>% 
-    arrange(Meldedatum_date) %>% 
-    group_map(~ c(unique(.x$county_name), paste(as.numeric(.x$i_reported > 100), collapse = "")), .keep = T) %>% 
-    lapply(., f.check_notbremse) %>% 
-    do.call(rbind, .) %>% 
-    as.data.frame(.) %>%
-    rename(county_name = V1, notbremse = V2) %>%  
-    mutate(county_name = stringr::str_replace(county_name, regex(".* "), "")) %>% 
-    mutate(notbremse = ifelse(notbremse, "gilt", "gilt nicht"))
-
-df.notbremse <- left_join(
-    df.gemeldet %>% 
-        arrange(county_name, desc(Meldedatum_date)) %>% 
-        mutate(is_over_100 = i_reported > 100) %>% 
-        group_by(county_name) %>% 
-        group_map(~ c(unique(.x$county_name), match(FALSE, .x$is_over_100)), .keep = TRUE) %>% 
-        do.call(rbind, .) %>% 
-        as.data.frame(.) %>% 
-        rename(reported_over = V2) ,
-    df.gemeldet %>% 
-        arrange(county_name, desc(Meldedatum_date)) %>% 
-        mutate(is_over_100 = i_calculated > 100) %>% 
-        group_by(county_name) %>% 
-        group_map(~ c(unique(.x$county_name), match(FALSE, .x$is_over_100)), .keep = TRUE) %>% 
-        do.call(rbind, .) %>% 
-        as.data.frame(.) %>% 
-        rename(calculated_over = V2),
-    by = "V1"
-) %>% left_join(
-    (left_join(
-        df.gemeldet %>% 
-            arrange(county_name, desc(Meldedatum_date)) %>% 
-            mutate(is_over_100 = i_reported < 100) %>% 
-            group_by(county_name) %>% 
-            group_map(~ c(unique(.x$county_name), match(FALSE, .x$is_over_100)), .keep = TRUE) %>% 
-            do.call(rbind, .) %>% 
-            as.data.frame(.) %>% 
-            rename(reported_under = V2),
-        df.gemeldet %>% 
-            arrange(county_name, desc(Meldedatum_date)) %>% 
-            mutate(is_over_100 = i_calculated < 100) %>% 
-            group_by(county_name) %>% 
-            group_map(~ c(unique(.x$county_name), match(FALSE, .x$is_over_100)), .keep = TRUE) %>% 
-            do.call(rbind, .) %>% 
-            as.data.frame(.) %>% 
-            rename(calculated_under = V2),
-        by = "V1")
-    ),
-    by = "V1") %>% 
-    rename(county_name = V1) %>% 
-    mutate(across(-county_name, ~ as.numeric(.x)-1)) %>% 
-    mutate(county_name = stringr::str_replace(county_name, regex(".* "), "")) %>% 
-    left_join(df.notbremse, by = "county_name")
-
 # Figuers ----
 fig.inzidenz <- df %>% 
     rename(Datum = Meldedatum_date) %>%
@@ -320,45 +226,9 @@ fig.cases <- df %>%
     ) +
     theme_minimal()
 
-fig.notbremse <- df.gemeldet %>% 
-    filter(Meldedatum_date >= (as_date(now())-15)) %>% 
-    filter(county_name == "SK Münster") %>% 
-    #filter(!is.na(i_calculated)) %>% 
-    mutate(county_name = stringr::str_replace(county_name, regex(".* "), "")) %>% 
-    rename(berechnet = i_calculated, gemeldet = i_reported) %>%
-    ggplot() +
-    geom_bar(
-        aes(fill = gemeldet > 100, y = gemeldet, x = Meldedatum_date),
-        stat = "identity"
-    ) +
-    scale_fill_manual(values = c("#a55757", "#8e0404")) +
-    geom_point(
-        aes(
-            x = Meldedatum_date, 
-            y = berechnet,
-            fill = berechnet > 100,
-            color = berechnet > 100),
-        shape = 23
-    ) +
-    geom_hline(yintercept = 100, color = "black", size = 0.25) +
-    scale_color_manual(values = c("#a58484", "#330101")) +
-    #facet_grid(vars(county_name)) +
-    labs(
-        title = "Gemeldete und errechnete 7-Tage-Inzidenz für Münster",
-        y = "7-Tage-Inzidenz",
-        x = "Datum (Woche)",
-        color = "",
-        fill = ""
-    ) +
-    theme_minimal()
-
-
-saveRDS(fig.notbremse, "data/fig.notbremse.RDS")
 saveRDS(fig.gender, "data/fig.gender.RDS")
 saveRDS(fig.mean_age, "data/fig.mean_age.RDS")
 saveRDS(fig.cases, "data/fig.cases.RDS")
 saveRDS(fig.inzidenz, "data/fig.inzidenz.RDS")
-saveRDS(df.notbremse, "data/df.notbremse.RDS")
 saveRDS(df.meta, "data/df.meta.RDS")
-saveRDS(df.gemeldet, "data/df.gemeldet.RDS")
 

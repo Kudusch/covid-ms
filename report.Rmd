@@ -69,15 +69,12 @@ df.meta %>% select(
       total_cases = colDef(name = "Fälle", align = "right"),
       total_recovered = colDef(name = "Genesen", align = "right"),
       total_deceased = colDef(name = "Verstorben", align = "right"),
-      calculated_over = colDef(name = "Errechnet", align = "right"),
-      reported_over = colDef(name = "Gemeldet", align = "right"),
-      calculated_under = colDef(name = "Errechnet", align = "right"),
-      reported_under = colDef(name = "Gemeldet", align = "right")
+      first_day = colDef(name = "Notbremse gilt seit", align = "right"),
+      days_since = colDef(name = "Werktage mit Inzidenz < 100", align = "right")
     ),
     columnGroups = list(
       colGroup(name = "Insgesamt", columns = c("total_cases", "total_recovered", "total_deceased")),
-      colGroup(name = "Tage mit Inzidenz > 100", columns = c("calculated_over", "reported_over", "total_deceased")),
-      colGroup(name = "Tage mit Inzidenz < 100", columns = c("calculated_under", "reported_under", "total_deceased"))
+      colGroup(name = "Notbremse", columns = c("first_day", "days_since"))
     )
   )
 ```
