@@ -20,7 +20,7 @@ library(stringr)
 library(lubridate)
 library(openxlsx)
 
-df.holidays <- read_csv("Gesetzliche Feiertage.csv") %>% 
+df.holidays <- read_csv("holidays.csv") %>% 
     mutate(Datum = as_date(strptime(Datum, format = "%Y-%m-%d")))
 
 county_list <- stringr::str_split(unlist(lapply(stringr::str_split(list.files("raw_data"), "\\."), function(x) {if (x[2] == "json") {x[1]}})), "_")
