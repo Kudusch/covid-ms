@@ -171,6 +171,7 @@ df.notbremse <- df.gemeldet %>%
     rename(county_name = V1, notbremse = V2, first_day = V3, days_since = V4) %>%  
     mutate(county_name = stringr::str_replace(county_name, regex(".* "), "")) %>% 
     mutate(first_day = as_date("2021-04-20") + (as.numeric(first_day) + 2)) %>% 
+    mutate(days_since = as.numeric(days_since)) %>% 
     mutate(notbremse = ifelse(notbremse, "gilt", "gilt nicht"))
     
 fig.notbremse <- df.gemeldet %>% 
