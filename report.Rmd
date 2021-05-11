@@ -91,7 +91,7 @@ ggplotly(fig.inzidenz, tooltip = c("x", "y"), dynamicTicks = TRUE) %>%
 
 ## Notbremse
 
-Die Notbremse ```r df.notbremse[df.notbremse["county_name"] == "Münster","notbremse"]``` für Münster[^note_notbremse]. Laut den täglich gemeldeten Daten liegt die 7-Tage-Inzidenz für Münster seit ```r df.notbremse[df.notbremse["county_name"] == "Münster","reported_over"]``` Tag(en) über 100. Laut der vom RKI berechneten Daten (inklusive der nachgemeldeten Fälle), liegt die 7-Tage-Inzidenz für Münster seit ```r df.notbremse[df.notbremse["county_name"] == "Münster","calculated_over"]``` Tag(en) über 100. 
+Die Notbremse ```r df.notbremse[df.notbremse["county_name"] == "Münster","notbremse"]``` für Münster. Laut den täglich gemeldeten Daten liegt die 7-Tage-Inzidenz für Münster seit ```r df.notbremse[df.notbremse["county_name"] == "Münster","reported_over"]``` Tag(en) über 100. Laut der vom RKI berechneten Daten (inklusive der nachgemeldeten Fälle), liegt die 7-Tage-Inzidenz für Münster seit ```r df.notbremse[df.notbremse["county_name"] == "Münster","calculated_over"]``` Tag(en) über 100. 
 
 Laut den täglich gemeldeten Daten liegt die 7-Tage-Inzidenz für Münster seit ```r df.notbremse[df.notbremse["county_name"] == "Münster","reported_under"]``` Tag(en) unter 100. Laut der vom RKI berechneten Daten (inklusiver der nachgemeldeten Fälle), liegt die 7-Tage-Inzidenz für Münster seit ```r df.notbremse[df.notbremse["county_name"] == "Münster","calculated_under"]``` Tag(en) unter 100. 
 
@@ -138,5 +138,3 @@ ggplotly(fig.mean_age, tooltip = c("x", "y"), dynamicTicks = TRUE) %>%
 Alle Daten stammen aus dem [COVID-19 Datenhub](https://npgeo-corona-npgeo-de.hub.arcgis.com), aktueller Stand der Daten: `r df.meta[df.meta$county_name == "SK Münster", "last_updated"]`. Bericht erstellt um `r Sys.time()`. Es werden Zahlen aus den Datensätzen [RKI COVID19](https://npgeo-corona-npgeo-de.hub.arcgis.com/datasets/dd4580c810204019a7b8eb3e0b329dd6_0) und [RKI Corona Landkreise](https://npgeo-corona-npgeo-de.hub.arcgis.com/datasets/917fc37a709542548cc3be077a786c17_0) berichtet. Die Anzahl der geimpften Personen wird geschätzt über die [Impfberichte](https://www.corona-kvwl.de/praxisinformationen/corona-schutzimpfung/impfberichte) der kassenärztlichen Vereinigung Westfalen-Lippe. Die täglich berichteten Inzidenzen werden durch den [Bericht des RKI](https://www.rki.de/DE/Content/InfAZ/N/Neuartiges_Coronavirus/Daten/Fallzahlen_Kum_Tab.xlsx) gemäß § 28b IfSG bestimmt. 
 
 [^note_estimated]: Die Anzahl der genesenen Personen und damit auch die Anzahl der aktuell infizierten Personen wird nur geschätzt, da das Ende einer Infektion nicht gemeldet wird. (s.h. [Disclaimer zu Genesenen](https://www.arcgis.com/home/item.html?id=f10774f1c63e40168479a1feb6c7ca74))
-
-[^note_notbremse]: Feiertage werden bei der Ermittlung der Notbremse noch nicht berücksichtigt.
