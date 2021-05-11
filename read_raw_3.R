@@ -149,8 +149,6 @@ f.check_notbremse <- function(x) {
     }
 }
 
-f.check_notbremse(df.notbremse[[5]])
-
 df.notbremse <- df.gemeldet %>% 
     filter(Meldedatum_date >= "2021-04-20") %>% 
     mutate(is_workday = case_when(
