@@ -20,6 +20,9 @@ library(stringr)
 library(lubridate)
 library(openxlsx)
 
+df.holidays <- read_csv("Gesetzliche Feiertage.csv") %>% 
+    mutate(Datum = as_date(strptime(Datum, format = "%Y-%m-%d")))
+
 county_list <- stringr::str_split(unlist(lapply(stringr::str_split(list.files("raw_data"), "\\."), function(x) {if (x[2] == "json") {x[1]}})), "_")
 county_list <- unique(unlist(lapply(county_list, `[`, 1)))
 
@@ -130,37 +133,44 @@ df.gemeldet <- df.gemeldet %>%
     )
 
 f.check_notbremse <- function(x) { 
-    y <- str_split(x[2], "")[[1]]
-    y <- c("0",y)[1:length(c(0,y)) %% 7 != 0]
-    y <- paste(y[2:length(y)], collapse = "")
-    z <- str_locate_all(paste0(rev(str_split(x[2], "")[[1]]), collapse = ""), regex("1{3}"))
-    if (length(z[[1]]) != 0) {
-        y <- substr(y, str_length(y)-(head(z[[1]], 1)[1]-3), str_length(y))
-    } else {
+    z <- str_locate_all(x[2], regex("1{3}(?!1)"))
+    y <- substr(x[2], tail(z[[1]], 1)[2]+1, str_length(x[2]))
+    y <- str_split(y, "")[[1]]
+    
+    if (length(z[[1]]) == 0) {
         return(c(x[1], FALSE, NA, NA))
     }
-    
+    y <- y[(str_split(x[3], "")[[1]][(tail(z[[1]], 1)[2]+1):str_length(x[3])] == 1)]
+    y <- paste0(y, collapse = "")
     if (str_detect(y, regex("0{5}"))) {
         return(c(x[1], FALSE, NA, NA))
     } else {
-        return(c(x[1], TRUE, str_locate(x[2], "111")[2], str_length(y)))
+        return(c(x[1], TRUE, str_locate(x[2], regex("1{3,}"))[1], str_length(str_extract(y, regex("0*$")))))
     }
 }
 
+f.check_notbremse(df.notbremse[[5]])
+
 df.notbremse <- df.gemeldet %>% 
     filter(Meldedatum_date >= "2021-04-20") %>% 
+    mutate(is_workday = case_when(
+        Meldedatum_date %in% df.holidays$Datum ~ FALSE,
+        strftime(Meldedatum_date, "%w") == 0 ~ FALSE,
+        TRUE ~ TRUE
+    )) %>% 
     group_by(county_name) %>% 
     arrange(Meldedatum_date) %>% 
     group_map(~ c(
         unique(.x$county_name), 
-        paste(as.numeric(.x$i_reported > 100), collapse = "")
+        paste(as.numeric(.x$i_reported > 100), collapse = ""),
+        paste(as.numeric(.x$is_workday), collapse = "")
         ), .keep = T) %>% 
     lapply(., f.check_notbremse) %>% 
     do.call(rbind, .) %>% 
     as.data.frame(.) %>%
     rename(county_name = V1, notbremse = V2, first_day = V3, days_since = V4) %>%  
     mutate(county_name = stringr::str_replace(county_name, regex(".* "), "")) %>% 
-    mutate(first_day = as_date("2021-04-20") + (as.numeric(first_day) + 1)) %>% 
+    mutate(first_day = as_date("2021-04-20") + (as.numeric(first_day) + 2)) %>% 
     mutate(notbremse = ifelse(notbremse, "gilt", "gilt nicht"))
     
 fig.notbremse <- df.gemeldet %>% 
