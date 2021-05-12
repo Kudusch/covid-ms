@@ -91,11 +91,7 @@ ggplotly(fig.inzidenz, tooltip = c("x", "y"), dynamicTicks = TRUE) %>%
 
 ## Notbremse
 
-Die Notbremse ```r df.notbremse[df.notbremse["county_name"] == "Münster","notbremse"]``` für Münster. Laut den täglich gemeldeten Daten liegt die 7-Tage-Inzidenz für Münster seit ```r df.notbremse[df.notbremse["county_name"] == "Münster","reported_over"]``` Tag(en) über 100. Laut der vom RKI berechneten Daten (inklusive der nachgemeldeten Fälle), liegt die 7-Tage-Inzidenz für Münster seit ```r df.notbremse[df.notbremse["county_name"] == "Münster","calculated_over"]``` Tag(en) über 100. 
-
-Laut den täglich gemeldeten Daten liegt die 7-Tage-Inzidenz für Münster seit ```r df.notbremse[df.notbremse["county_name"] == "Münster","reported_under"]``` Tag(en) unter 100. Laut der vom RKI berechneten Daten (inklusiver der nachgemeldeten Fälle), liegt die 7-Tage-Inzidenz für Münster seit ```r df.notbremse[df.notbremse["county_name"] == "Münster","calculated_under"]``` Tag(en) unter 100. 
-
-Die errechnete Inzidenz ist in Münster durchschnittlich um ```r mean_delta_reported_calculated```% höher, als die täglich gemeldete.
+Die Notbremse ```r df.notbremse[df.notbremse["county_name"] == "Münster","notbremse"]``` für Münster. Laut den täglich gemeldeten Daten liegt die 7-Tage-Inzidenz für Münster seit ```r df.notbremse[df.notbremse["county_name"] == "Münster", "days_since"]``` Werktag(en) unter 100. Die errechnete Inzidenz ist in Münster durchschnittlich um ```r mean_delta_reported_calculated```% höher, als die täglich gemeldete.
 
 ```{r echo=FALSE, out.width = "98%", out.height= "350px"}
 ggplotly(fig.notbremse, tooltip = c("x", "y"), dynamicTicks = TRUE) %>% 
@@ -118,13 +114,13 @@ ggplotly(fig.inzidenz_nation_wide, tooltip = c("x", "text"), dynamicTicks = TRUE
     plotly::config(displayModeBar = FALSE) %>% 
     plotly::style(visible="legendonly", traces = c(5:20)) %>% 
     plotly::layout(legend = list(orientation = "h", x = 0, y = -0.3))
-````
+```
 
 ```{r echo=FALSE, out.width = "98%", out.height= "350px"}
 ggplotly(fig.gender, tooltip = c("x", "y"), dynamicTicks = TRUE) %>% 
     plotly::config(displayModeBar = FALSE) %>% 
     plotly::layout(legend = list(orientation = "h", x = 0, y = -0.1))
-````
+```
 Das RKI aggregiert Fälle nach sechs Altersgruppen (A00-A04, A05-A14, A15-A34, A35-A59, A60-A79, A80+). Das tatsächliche Alter der Infizierten kann daher nur geschätzt werden. Das geschieht hier über das theoretische Durchschnittsalter der jeweiligen Altersgruppen (unter Annahme einer gleichmäßigen Verteilung des Alters innerhalb der Gruppe). Für die Altersgruppe "A80+" wird der obere Range der Gruppe auf 99 Jahren gesetzt. So kann für jeden Tag, bei angemessener Fallzahl (n > 100), ein durchschnittliches Alter der gemeldeten Infizierten errechnet werden.
 
 ```{r echo=FALSE, out.width = "98%", out.height= "350px"}

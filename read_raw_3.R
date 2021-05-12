@@ -138,12 +138,16 @@ f.check_notbremse <- function(x) {
     y <- str_split(y, "")[[1]]
     
     if (length(z[[1]]) == 0) {
-        return(c(x[1], FALSE, NA, NA))
+        z <- str_locate(x[2], regex("0*$"))
+        y <- substr(x[2], z[1], str_length(x[2]))
+        y <- str_split(y, "")[[1]]
+        y <- y[(str_split(x[3], "")[[1]][z[1]:str_length(x[2])] == 1)]
+        return(c(x[1], FALSE, NA, length(y)))
     }
     y <- y[(str_split(x[3], "")[[1]][(tail(z[[1]], 1)[2]+1):str_length(x[3])] == 1)]
     y <- paste0(y, collapse = "")
     if (str_detect(y, regex("0{5}"))) {
-        return(c(x[1], FALSE, NA, NA))
+        return(c(x[1], FALSE, NA, str_length(str_extract(y, regex("0*$")))))
     } else {
         return(c(x[1], TRUE, str_locate(x[2], regex("1{3,}"))[1], str_length(str_extract(y, regex("0*$")))))
     }
