@@ -26,18 +26,18 @@ df.notbremse <- readRDS("data/df.notbremse.RDS")
 df.gemeldet <- readRDS("data/df.gemeldet.RDS")
 df.meta <- readRDS("data/df.meta.RDS")
 
-total_cases <- df.meta[df.meta$county_name == "SK Münster", "total_cases"]
-total_deceased <- df.meta[df.meta$county_name == "SK Münster", "total_deceased"]
-total_recovered <- df.meta[df.meta$county_name == "SK Münster", "total_recovered"]
-current_cases <- df.meta[df.meta$county_name == "SK Münster", "current_cases"]
-case_rate_percent <- df.meta[df.meta$county_name == "SK Münster", "case_rate_percent"]
-death_rate_percent <- df.meta[df.meta$county_name == "SK Münster", "death_rate_percent"]
-mean_delta_reported_calculated <- mean((df.gemeldet %>% filter(county_name == "SK Münster", !is.na(i_reported)) %>% mutate(delta_p = (i_calculated-i_reported)/i_reported))$delta_p)
+total_cases <- df.meta[df.meta$county_name == "Münster", "total_cases"]
+total_deceased <- df.meta[df.meta$county_name == "Münster", "total_deceased"]
+total_recovered <- df.meta[df.meta$county_name == "Münster", "total_recovered"]
+current_cases <- df.meta[df.meta$county_name == "Münster", "current_cases"]
+case_rate_percent <- df.meta[df.meta$county_name == "Münster", "case_rate_percent"]
+death_rate_percent <- df.meta[df.meta$county_name == "Münster", "death_rate_percent"]
+mean_delta_reported_calculated <- mean((df.gemeldet %>% filter(county_name == "Münster", !is.na(i_reported)) %>% mutate(delta_p = (i_calculated-i_reported)/i_reported))$delta_p)
 mean_delta_reported_calculated <- format(round(mean_delta_reported_calculated*100, 2), nsmall = 2)
 
 ```
 
-Das RKI meldet eine 7-Tage-Inzidenz für Münster von ```r round(as.numeric(df.meta[df.meta$county_name == "SK Münster", "cases7_per_100k"]), 2)```. Es sind gerade etwa ```r current_cases```[^note_estimated] Personen an COVID-19 erkrankt (etwa ```r round(case_rate_percent, 2)```% der Münsteraner*innen).
+Das RKI meldet eine 7-Tage-Inzidenz für Münster von ```r round(as.numeric(df.meta[df.meta$county_name == "Münster", "cases7_per_100k"]), 2)```. Es sind gerade etwa ```r current_cases```[^note_estimated] Personen an COVID-19 erkrankt (etwa ```r round(case_rate_percent, 2)```% der Münsteraner*innen).
 
 Insgesamt sind seit März 2020 ```r total_cases``` Personen an COVID-19 erkrankt, wobei davon insgesamt etwa ```r total_recovered```[\(^1\)](#fn1) Personen wieder genesen und ```r total_deceased``` verstorben sind. Die Todesrate beträgt für Münster ```r round(death_rate_percent, 2)```%.
 
@@ -131,6 +131,6 @@ ggplotly(fig.mean_age, tooltip = c("x", "y"), dynamicTicks = TRUE) %>%
 
 <hr>
 
-Alle Daten stammen aus dem [COVID-19 Datenhub](https://npgeo-corona-npgeo-de.hub.arcgis.com), aktueller Stand der Daten: `r df.meta[df.meta$county_name == "SK Münster", "last_updated"]`. Bericht erstellt um `r Sys.time()`. Es werden Zahlen aus den Datensätzen [RKI COVID19](https://npgeo-corona-npgeo-de.hub.arcgis.com/datasets/dd4580c810204019a7b8eb3e0b329dd6_0) und [RKI Corona Landkreise](https://npgeo-corona-npgeo-de.hub.arcgis.com/datasets/917fc37a709542548cc3be077a786c17_0) berichtet. Die Anzahl der geimpften Personen wird geschätzt über die [Impfberichte](https://www.corona-kvwl.de/praxisinformationen/corona-schutzimpfung/impfberichte) der kassenärztlichen Vereinigung Westfalen-Lippe. Die täglich berichteten Inzidenzen werden durch den [Bericht des RKI](https://www.rki.de/DE/Content/InfAZ/N/Neuartiges_Coronavirus/Daten/Fallzahlen_Kum_Tab.xlsx) gemäß § 28b IfSG bestimmt. 
+Alle Daten stammen aus dem [COVID-19 Datenhub](https://npgeo-corona-npgeo-de.hub.arcgis.com), aktueller Stand der Daten: `r df.meta[df.meta$county_name == "Münster", "last_updated"]`. Bericht erstellt um `r Sys.time()`. Es werden Zahlen aus den Datensätzen [RKI COVID19](https://npgeo-corona-npgeo-de.hub.arcgis.com/datasets/dd4580c810204019a7b8eb3e0b329dd6_0) und [RKI Corona Landkreise](https://npgeo-corona-npgeo-de.hub.arcgis.com/datasets/917fc37a709542548cc3be077a786c17_0) berichtet. Die Anzahl der geimpften Personen wird geschätzt über die [Impfberichte](https://www.corona-kvwl.de/praxisinformationen/corona-schutzimpfung/impfberichte) der kassenärztlichen Vereinigung Westfalen-Lippe. Die täglich berichteten Inzidenzen werden durch den [Bericht des RKI](https://www.rki.de/DE/Content/InfAZ/N/Neuartiges_Coronavirus/Daten/Fallzahlen_Kum_Tab.xlsx) gemäß § 28b IfSG bestimmt. 
 
 [^note_estimated]: Die Anzahl der genesenen Personen und damit auch die Anzahl der aktuell infizierten Personen wird nur geschätzt, da das Ende einer Infektion nicht gemeldet wird. (s.h. [Disclaimer zu Genesenen](https://www.arcgis.com/home/item.html?id=f10774f1c63e40168479a1feb6c7ca74))
