@@ -53,7 +53,7 @@ df.meta <- data.frame(
     "population" = population_list,
     "cases7_per_100k" = cases7_per_100k_list,
     "last_updated" = last_updated_list
-)
+) %>% mutate(county_name = stringr::str_replace(county_name, regex(".* "), ""))
 
 df <- vroom::vroom("raw_data/RKI_COVID19.csv") %>% 
     filter(IdLandkreis %in% df.meta$county_id) %>% 
@@ -74,7 +74,7 @@ df <- vroom::vroom("raw_data/RKI_COVID19.csv") %>%
         cases,
         deaths,
         recovered
-    )
+    ) %>% mutate(county_name = stringr::str_replace(county_name, regex(".* "), ""))
 
 df <- left_join(
     data.frame(
@@ -122,6 +122,7 @@ df.gemeldet <- df.gemeldet %>%
     filter(county_id %in% as.character(as.numeric(county_list))) %>% 
     mutate(Meldedatum_date = as_date(as_datetime(as.numeric(Meldedatum_date), tz = "Europe/Berlin"))) %>% 
     mutate(Meldedatum_date = Meldedatum_date-1) %>% 
+    mutate(county_name = stringr::str_replace(county_name, regex(".* "), "")) %>% 
     select(-county_id) %>% 
     full_join(
         select(df, county_name, Meldedatum_date, sieben_tage_inzidenz),

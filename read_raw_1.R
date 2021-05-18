@@ -155,8 +155,9 @@ df <- left_join(
         arrange(Meldedatum_date) %>% 
         mutate(county_name = rep(
             df.meta$county_name, 
-            n()/length(df.meta$county_id))), 
-    df, 
+            n()/length(df.meta$county_id))) %>% 
+        mutate(county_name = stringr::str_replace(county_name, regex(".* "), "")), 
+    df %>% mutate(county_name = stringr::str_replace(county_name, regex(".* "), "")), 
     by = c("Meldedatum_date", "county_name")) %>% 
     mutate(across(where(is.numeric), ~ tidyr::replace_na(.x, 0))) %>% 
     left_join(df.meta, by = c("county_name")) %>% 
@@ -170,8 +171,8 @@ df <- left_join(
     ungroup() %>% 
     rename(sieben_tage_inzidenz = i)
 
-
 df.meta <- df.meta %>% 
+    mutate(county_name = stringr::str_replace(county_name, regex(".* "), "")) %>% 
     left_join(
         df %>% 
             group_by(county_name) %>% 
