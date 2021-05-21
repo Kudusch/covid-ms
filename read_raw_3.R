@@ -179,9 +179,8 @@ df.notbremse <- df.gemeldet %>%
     
 fig.notbremse <- df.gemeldet %>% 
     filter(Meldedatum_date >= (as_date(now())-15)) %>% 
-    filter(county_name == "SK Münster") %>% 
+    filter(county_name == "Münster") %>% 
     #filter(!is.na(i_calculated)) %>% 
-    mutate(county_name = stringr::str_replace(county_name, regex(".* "), "")) %>% 
     rename(berechnet = i_calculated, gemeldet = i_reported) %>%
     mutate(day_of_week = strftime(Meldedatum_date, "%A")) %>% 
     ggplot() +
@@ -199,6 +198,7 @@ fig.notbremse <- df.gemeldet %>%
         shape = 23
     ) +
     geom_hline(yintercept = 100, color = "black", size = 0.25) +
+    geom_hline(yintercept = 50, color = "black", size = 0.25) +
     scale_color_manual(values = c("#a58484", "#330101")) +
     #facet_grid(vars(county_name)) +
     labs(

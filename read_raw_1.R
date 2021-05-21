@@ -160,7 +160,7 @@ df <- left_join(
     df %>% mutate(county_name = stringr::str_replace(county_name, regex(".* "), "")), 
     by = c("Meldedatum_date", "county_name")) %>% 
     mutate(across(where(is.numeric), ~ tidyr::replace_na(.x, 0))) %>% 
-    left_join(df.meta, by = c("county_name")) %>% 
+    left_join(df.meta %>% mutate(county_name = stringr::str_replace(county_name, regex(".* "), ""), by = c("county_name"))) %>%
     mutate(population = as.numeric(population)) %>% 
     group_by(county_name) %>% 
     arrange(Meldedatum_date) %>% 
@@ -192,7 +192,6 @@ df.meta <- df.meta %>%
 # Figuers ----
 fig.inzidenz <- df %>% 
     rename(Datum = Meldedatum_date) %>%
-    mutate(county_name = stringr::str_replace(county_name, regex(".* "), "")) %>% 
     ggplot(aes(x = Datum, y = sieben_tage_inzidenz, color = county_name)) +
     geom_hline(yintercept = 100, color = "#bf0000", size = 0.25) +
     geom_hline(yintercept = 50, color = "#bf0000", size = 0.25) +
