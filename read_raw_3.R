@@ -104,10 +104,10 @@ df <- left_join(
 df.gemeldet <- openxlsx::read.xlsx(
     "raw_data/Fallzahlen_Kum_Tab.xlsx",
     #sheetName = "LK_7-Tage-Inzidenz",
-    sheet = 7,
+    sheet = 5,
     detectDates = FALSE
 )
-df.gemeldet <- df.gemeldet[2:length(df.gemeldet)]
+df.gemeldet <- df.gemeldet[2:nrow(df.gemeldet), 2:length(df.gemeldet)]
 list.dates <- strptime(df.gemeldet[1,3:length(df.gemeldet)], "%d.%m.%Y")
 list.dates <- c(
     as.numeric(list.dates[!is.na(list.dates)]),
