@@ -104,7 +104,7 @@ df <- left_join(
 df.gemeldet <- openxlsx::read.xlsx(
     "raw_data/Fallzahlen_Kum_Tab.xlsx",
     #sheetName = "LK_7-Tage-Inzidenz",
-    sheet = 5,
+    sheet = 6,
     detectDates = FALSE
 )
 df.gemeldet <- df.gemeldet[2:nrow(df.gemeldet), 2:length(df.gemeldet)]
