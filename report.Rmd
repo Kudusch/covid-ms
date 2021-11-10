@@ -39,7 +39,7 @@ mean_delta_reported_calculated <- format(round(mean_delta_reported_calculated*10
 
 Das RKI meldet eine 7-Tage-Inzidenz für Münster von ```r round(as.numeric(df.meta[df.meta$county_name == "Münster", "cases7_per_100k"]), 2)```. Es sind gerade etwa ```r current_cases```[^note_estimated] Personen an COVID-19 erkrankt (etwa ```r round(case_rate_percent, 2)```% der Münsteraner*innen).
 
-Insgesamt sind seit März 2020 ```r total_cases``` Personen an COVID-19 erkrankt, wobei davon insgesamt etwa ```r total_recovered```[\(^1\)](#fn1) Personen wieder genesen und ```r total_deceased``` verstorben sind. Die Todesrate beträgt für Münster ```r round(death_rate_percent, 2)```%.
+Insgesamt sind seit März 2020 ```r format(total_cases, digits = 0, scientific = FALSE, big.mark = ".", decimal.mark = ",")``` Personen an COVID-19 erkrankt, wobei davon insgesamt etwa ```r format(total_recovered, digits = 0, scientific = FALSE, big.mark = ".", decimal.mark = ",")```[\(^1\)](#fn1) Personen wieder genesen und ```r format(total_deceased, digits = 0, scientific = FALSE, big.mark = ".", decimal.mark = ",")``` verstorben sind. Die Todesrate beträgt für Münster ```r round(death_rate_percent, 2)```%.
 
 ```{r echo=FALSE, out.width = "98%", out.height= "350px"}
 
