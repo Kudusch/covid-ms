@@ -14,13 +14,14 @@ curl -L https://www.arcgis.com/sharing/rest/content/items/f10774f1c63e40168479a1
 curl "https://www.rki.de/DE/Content/InfAZ/N/Neuartiges_Coronavirus/Daten/Fallzahlen_Kum_Tab.xlsx?__blob=publicationFile" > $DIR/raw_data/Fallzahlen_Kum_Tab.xlsx
 
 # Download metadata
-python3 $DIR/get_data.py '14713'
-python3 $DIR/get_data.py '05515'
-python3 $DIR/get_data.py '05913'
-python3 $DIR/get_data.py '03403'
-python3 $DIR/get_data.py '05334'
-python3 $DIR/get_data.py '05978'
-python3 $DIR/get_data.py '05513'
+python3 $DIR/get_metadata.py '14713' # Leipzig
+python3 $DIR/get_metadata.py '05515' # Münster
+#python3 $DIR/get_metadata.py '05913' # Dortmund
+#python3 $DIR/get_metadata.py '03403' # Oldenburg
+python3 $DIR/get_metadata.py '05334' # Aachen
+python3 $DIR/get_metadata.py '05978' # Unna
+python3 $DIR/get_metadata.py '06533' # Hadamar
+python3 $DIR/get_metadata.py '05513' # Gelsenkirchen
 
 # Download and extract vaccination numbers
 # curl https://www.corona-kvwl.de/praxisinformationen/corona-schutzimpfung/impfberichte | grep -io 'fileadmin.*\.pdf' > $DIR/meta_data/files.txt
@@ -33,7 +34,16 @@ python3 $DIR/get_data.py '05513'
 # Remove tmp data
 rm $DIR/raw_data/*.pdf $DIR/raw_data/*.png $DIR/raw_data/*.txt
 
-#Rscript $DIR/render.R
+# Stop FoundryVTT
+#tmux send-keys -t 3.1 C-c
+
+# Generate RDS
+Rscript $DIR/read_raw_1.R
+Rscript $DIR/read_raw_2.R
+Rscript $DIR/read_raw_3.R
+
+# Start FoundryVTT
+#tmux send-keys -t 3.1 "node resources/app/main.js --dataPath=$HOME/foundry/foundrydata" Enter
 
 # Render report
-#Rscript $DIR/render.R
+Rscript $DIR/render.R

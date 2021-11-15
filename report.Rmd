@@ -82,7 +82,7 @@ df.meta %>% select(
 ```{r echo=FALSE, out.width = "98%", out.height= "350px"}
 ggplotly(fig.inzidenz, tooltip = c("x", "y"), dynamicTicks = TRUE) %>% 
   plotly::config(displayModeBar = FALSE) %>% 
-  plotly::style(visible="legendonly", traces = c(4,5,6,7,9,10)) %>% 
+  plotly::style(visible="legendonly", traces = c(4,5,6,7,9)) %>% 
   plotly::layout(legend = list(orientation = "h", x = 0, y = -0.3))
 # ggplotly(fig.cases, tooltip = c("x", "y"), dynamicTicks = TRUE) %>% 
 #  plotly::config(displayModeBar = FALSE) %>% 
