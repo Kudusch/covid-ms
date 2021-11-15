@@ -6,3 +6,4 @@ raw_data/*.csv
 raw_data/*.json
 raw_data/*.xlsx
 data/*.RDS
+data/*.png

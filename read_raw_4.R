@@ -123,7 +123,7 @@ fig.inzidenz_widget <- df.inzidenz_widget %>%
         size = 3
     ) +
     scale_x_date(date_breaks = "1 week", date_labels = "%e. %b") +
-    theme(
+	theme(
         plot.background = element_rect(fill = "#222222", color = "#222222"),
         panel.background = element_rect(fill = "#222222", color = "#222222"),
         strip.background = element_rect(fill = "#222222", color = "#222222"),
@@ -131,7 +131,8 @@ fig.inzidenz_widget <- df.inzidenz_widget %>%
         panel.grid.minor.x = element_blank(),
         axis.title = element_blank(),
         axis.text = element_text(color = "white"),
-        axis.text.x = element_blank()
+        axis.text.x = element_blank(),
+        axis.text.y = element_text(angle = 90, hjust = 0.5)
     )
 
-ggsave("data/widget.png", fig.inzidenz_widget, scale = 1.2, height = 400, width = 400, units = "px")
+ggsave("data/widget.png", fig.inzidenz_widget, scale = 1.2, height = 30, width = 30, units = "mm")
