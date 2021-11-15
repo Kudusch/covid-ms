@@ -9,6 +9,12 @@ message(getwd())
 
 options(stringsAsFactors=FALSE)
 
+library(magrittr)
+library(dplyr)
+library(ggplot2)
+library(scales)
+library(lubridate)
+
 RKI_COVID19 <- vroom::vroom("raw_data/RKI_COVID19.csv")
 
 df.nation_wide <- RKI_COVID19 %>%
@@ -96,9 +102,26 @@ fig.inzidenz_widget <- df.inzidenz_widget %>%
     rename(Datum = Meldedatum_date) %>%
     arrange(desc(Datum)) %>% 
     slice_head(n = 21) %>% 
+    mutate(id = 1:n()) %>% 
+    mutate(text_local = round(sieben_tage_inzidenz_local, digits = 0)) %>% 
+    mutate(text_nation = round(sieben_tage_inzidenz_nation, digits = 0)) %>% 
+    mutate(text_local = ifelse(id == min(which(!is.na(.$text_local))), text_local, NA)) %>% 
+    mutate(text_nation = ifelse(id == min(which(!is.na(.$text_nation))), text_nation, NA)) %>% 
     ggplot(aes(x = Datum)) +
-    geom_line(aes(y = sieben_tage_inzidenz_nation), color = "lightblue", size = 1.5) +
+    geom_line(aes(y = sieben_tage_inzidenz_nation), color = "darkblue", size = 1.5) +
     geom_line(aes(y = sieben_tage_inzidenz_local), color = "blue", size = 1.5) +
+    geom_text(
+        aes(y = sieben_tage_inzidenz_nation+20, label = text_nation),
+        hjust = 1,
+        color = "white",
+        size = 3
+    ) +
+    geom_text(
+        aes(y = sieben_tage_inzidenz_local+20, label = text_local),
+        hjust = 1,
+        color = "white",
+        size = 3
+    ) +
     scale_x_date(date_breaks = "1 week", date_labels = "%e. %b") +
     theme(
         plot.background = element_rect(fill = "#222222", color = "#222222"),
@@ -111,4 +134,4 @@ fig.inzidenz_widget <- df.inzidenz_widget %>%
         axis.text.x = element_blank()
     )
 
-ggsave("widget.png", fig.inzidenz_widget, scale = 1.2, height = 400, width = 400, units = "px")
+ggsave("data/widget.png", fig.inzidenz_widget, scale = 1.2, height = 400, width = 400, units = "px")
