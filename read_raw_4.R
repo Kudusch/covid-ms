@@ -96,9 +96,7 @@ df.inzidenz_widget <- df.nation_wide %>%
         df.city_wide %>% select(Meldedatum_date, sieben_tage_inzidenz), 
         by = "Meldedatum_date",
         suffix = c("_nation", "_local")
-    )
-
-fig.inzidenz_widget <- df.inzidenz_widget %>% 
+    ) %>% 
     rename(Datum = Meldedatum_date) %>%
     arrange(desc(Datum)) %>% 
     slice_head(n = 21) %>% 
@@ -106,23 +104,29 @@ fig.inzidenz_widget <- df.inzidenz_widget %>%
     mutate(text_local = round(sieben_tage_inzidenz_local, digits = 0)) %>% 
     mutate(text_nation = round(sieben_tage_inzidenz_nation, digits = 0)) %>% 
     mutate(text_local = ifelse(id == min(which(!is.na(.$text_local))), text_local, NA)) %>% 
-    mutate(text_nation = ifelse(id == min(which(!is.na(.$text_nation))), text_nation, NA)) %>% 
+    mutate(text_nation = ifelse(id == min(which(!is.na(.$text_nation))), text_nation, NA))
+
+
+saveRDS(df.inzidenz_widget, file = "data/df.inzidenz_widget.RDS")
+
+fig.inzidenz_widget <- df.inzidenz_widget %>% 
     ggplot(aes(x = Datum)) +
-    geom_line(aes(y = sieben_tage_inzidenz_nation), color = "darkblue", size = 1.5) +
-    geom_line(aes(y = sieben_tage_inzidenz_local), color = "blue", size = 1.5) +
+    geom_line(aes(y = sieben_tage_inzidenz_nation), color = "#007aff", size = 1.5) +
+    geom_line(aes(y = sieben_tage_inzidenz_local), color = "#1badf7", size = 1.5) +
     geom_text(
         aes(y = sieben_tage_inzidenz_nation+20, label = text_nation),
         hjust = 1,
-        color = "white",
+        color = "#f7f7f7",
         size = 3
     ) +
     geom_text(
         aes(y = sieben_tage_inzidenz_local+20, label = text_local),
         hjust = 1,
-        color = "white",
+        color = "#f7f7f7",
         size = 3
     ) +
     scale_x_date(date_breaks = "1 week", date_labels = "%e. %b") +
+    scale_y_continuous(n.breaks = 3) +
 	theme(
         plot.background = element_rect(fill = "#222222", color = "#222222"),
         panel.background = element_rect(fill = "#222222", color = "#222222"),
@@ -130,9 +134,44 @@ fig.inzidenz_widget <- df.inzidenz_widget %>%
         panel.grid.major.x = element_blank(),
         panel.grid.minor.x = element_blank(),
         axis.title = element_blank(),
-        axis.text = element_text(color = "white"),
+        axis.text = element_text(color = "#f7f7f7"),
         axis.text.x = element_blank(),
-        axis.text.y = element_text(angle = 90, hjust = 0.5)
+        axis.text.y = element_text(angle = 90, hjust = 0.5),
+        plot.margin=unit(c(4, 4, 4, 4), "mm")
     )
 
-ggsave("data/widget.png", fig.inzidenz_widget, scale = 1.2, height = 30, width = 30, units = "mm")
+ggsave("data/widget_dark.png", fig.inzidenz_widget, scale = 1.2, height = 30, width = 30, units = "mm")
+
+
+fig.inzidenz_widget <- df.inzidenz_widget %>% 
+    ggplot(aes(x = Datum)) +
+    geom_line(aes(y = sieben_tage_inzidenz_nation), color = "#007aff", size = 1.5) +
+    geom_line(aes(y = sieben_tage_inzidenz_local), color = "#1badf7", size = 1.5) +
+    geom_text(
+        aes(y = sieben_tage_inzidenz_nation+20, label = text_nation),
+        hjust = 1,
+        color = "#222222",
+        size = 3
+    ) +
+    geom_text(
+        aes(y = sieben_tage_inzidenz_local+20, label = text_local),
+        hjust = 1,
+        color = "#222222",
+        size = 3
+    ) +
+    scale_x_date(date_breaks = "1 week", date_labels = "%e. %b") +
+    scale_y_continuous(n.breaks = 3) +
+	theme(
+        plot.background = element_rect(fill = "#f7f7f7", color = "#f7f7f7"),
+        panel.background = element_rect(fill = "#f7f7f7", color = "#f7f7f7"),
+        strip.background = element_rect(fill = "#f7f7f7", color = "#f7f7f7"),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        axis.title = element_blank(),
+        axis.text = element_text(color = "#222222"),
+        axis.text.x = element_blank(),
+        axis.text.y = element_text(angle = 90, hjust = 0.5),
+        plot.margin=unit(c(4, 4, 4, 4), "mm")
+    )
+
+ggsave("data/widget_light.png", fig.inzidenz_widget, scale = 1.2, height = 30, width = 30, units = "mm")
