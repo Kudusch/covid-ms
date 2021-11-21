@@ -9,6 +9,7 @@ mkdir -p $DIR/data
 
 # Download RKI-Data
 curl -L https://www.arcgis.com/sharing/rest/content/items/f10774f1c63e40168479a1feb6c7ca74/data > $DIR/raw_data/RKI_COVID19.csv
+curl -L https://raw.githubusercontent.com/robert-koch-institut/COVID-19-Hospitalisierungen_in_Deutschland/master/Aktuell_Deutschland_adjustierte-COVID-19-Hospitalisierungen.csv > $DIR/raw_data/RKI_Hosp_adj.csv
 
 # Download daily reported data
 curl "https://www.rki.de/DE/Content/InfAZ/N/Neuartiges_Coronavirus/Daten/Fallzahlen_Kum_Tab.xlsx?__blob=publicationFile" > $DIR/raw_data/Fallzahlen_Kum_Tab.xlsx
@@ -42,6 +43,7 @@ Rscript $DIR/read_raw_1.R
 Rscript $DIR/read_raw_2.R
 Rscript $DIR/read_raw_3.R
 Rscript $DIR/read_raw_4.R
+Rscript $DIR/read_raw_5.R
 
 # Start FoundryVTT
 #tmux send-keys -t 3.1 "node resources/app/main.js --dataPath=$HOME/foundry/foundrydata" Enter

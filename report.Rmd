@@ -22,6 +22,7 @@ fig.gender <- readRDS("data/fig.gender.RDS")
 fig.mean_age <- readRDS("data/fig.mean_age.RDS")
 fig.cases <-readRDS("data/fig.cases.RDS")
 fig.inzidenz <- readRDS("data/fig.inzidenz.RDS")
+fig.hosp <- readRDS("data/fig.hosp.RDS")
 df.notbremse <- readRDS("data/df.notbremse.RDS")
 df.gemeldet <- readRDS("data/df.gemeldet.RDS")
 df.meta <- readRDS("data/df.meta.RDS")
@@ -117,6 +118,21 @@ ggplotly(fig.inzidenz_nation_wide, tooltip = c("x", "text"), dynamicTicks = TRUE
 ```
 
 ```{r echo=FALSE, out.width = "98%", out.height= "350px"}
+ggplotly(fig.hosp, tooltip = c("x", "text"), dynamicTicks = TRUE) %>% 
+    plotly::config(displayModeBar = FALSE) %>% 
+    plotly::layout(
+                   legend = list(orientation = "h", x = 0, y = -0.3),
+                   title = list(text = paste0(
+                                              "7-Tage-Inzidenz der hospitalisierten COVID-19-Fälle",
+                                              "<br>",
+                                              "<sup>",
+                                              "Punktschätzer und 95%-Prädiktionsintervall der adjustierten 7-Tage-Hospitalisierungsinzidenz in blau",
+                                              "</sup>"
+                           ))
+    )
+```
+
+```{r echo=FALSE, out.width = "98%", out.height= "350px"}
 ggplotly(fig.gender, tooltip = c("x", "y"), dynamicTicks = TRUE) %>% 
     plotly::config(displayModeBar = FALSE) %>% 
     plotly::layout(legend = list(orientation = "h", x = 0, y = -0.1))
@@ -133,6 +149,6 @@ ggplotly(fig.mean_age, tooltip = c("x", "y"), dynamicTicks = TRUE) %>%
 
 Gebaut mit R, Python, und zsh. Code verfügbar auf [Github](https://github.com/Kudusch/covid-ms/).
 
-Alle Daten stammen aus dem [COVID-19 Datenhub](https://npgeo-corona-npgeo-de.hub.arcgis.com), aktueller Stand der Daten: `r df.meta[df.meta$county_name == "Münster", "last_updated"]`. Bericht erstellt um `r Sys.time()`. Es werden Zahlen aus den Datensätzen [RKI COVID19](https://npgeo-corona-npgeo-de.hub.arcgis.com/datasets/dd4580c810204019a7b8eb3e0b329dd6_0) und [RKI Corona Landkreise](https://npgeo-corona-npgeo-de.hub.arcgis.com/datasets/917fc37a709542548cc3be077a786c17_0) berichtet. Die Anzahl der geimpften Personen wird geschätzt über die [Impfberichte](https://www.corona-kvwl.de/praxisinformationen/corona-schutzimpfung/impfberichte) der kassenärztlichen Vereinigung Westfalen-Lippe. Die täglich berichteten Inzidenzen werden durch den [Bericht des RKI](https://www.rki.de/DE/Content/InfAZ/N/Neuartiges_Coronavirus/Daten/Fallzahlen_Kum_Tab.xlsx) gemäß § 28b IfSG bestimmt. 
+Alle Daten stammen aus dem [COVID-19 Datenhub](https://npgeo-corona-npgeo-de.hub.arcgis.com), aktueller Stand der Daten: `r df.meta[df.meta$county_name == "Münster", "last_updated"]`. Bericht erstellt um `r Sys.time()`. Es werden Zahlen aus den Datensätzen [RKI COVID19](https://npgeo-corona-npgeo-de.hub.arcgis.com/datasets/dd4580c810204019a7b8eb3e0b329dd6_0) und [RKI Corona Landkreise](https://npgeo-corona-npgeo-de.hub.arcgis.com/datasets/917fc37a709542548cc3be077a786c17_0) berichtet. Die adjustierte 7-Tage-Hospitalisierungsinzidenz wird berichtet nach den Daten aus dem [Github Repo des RKI](https://github.com/robert-koch-institut/COVID-19-Hospitalisierungen_in_Deutschland/blob/master/Aktuell_Deutschland_adjustierte-COVID-19-Hospitalisierungen.csv). Die täglich berichteten Inzidenzen werden durch den [Bericht des RKI](https://www.rki.de/DE/Content/InfAZ/N/Neuartiges_Coronavirus/Daten/Fallzahlen_Kum_Tab.xlsx) gemäß § 28b IfSG bestimmt. 
 
 [^note_estimated]: Die Anzahl der genesenen Personen und damit auch die Anzahl der aktuell infizierten Personen wird nur geschätzt, da das Ende einer Infektion nicht gemeldet wird. (s.h. [Disclaimer zu Genesenen](https://www.arcgis.com/home/item.html?id=f10774f1c63e40168479a1feb6c7ca74))

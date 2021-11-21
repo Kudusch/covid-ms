@@ -143,10 +143,10 @@ fig.inzidenz_widget <- df.inzidenz_widget %>%
         axis.text.x = element_blank(),
         axis.text.y = element_text(angle = 90, hjust = 0.5),
         axis.ticks.x = element_line(color = "#FFFFFF"),
-        plot.margin=unit(c(4, 4, 4, 4), "mm")
+        plot.margin=unit(c(3, 4, 4, 3), "mm")
     )
 
-ggsave("widget_dark.png", fig.inzidenz_widget, scale = 1.2, height = 30, width = 30, units = "mm")
+ggsave("data/widget_dark.png", fig.inzidenz_widget, scale = 1.2, height = 30, width = 30, units = "mm")
 
 
 fig.inzidenz_widget <- df.inzidenz_widget %>% 
@@ -156,13 +156,13 @@ fig.inzidenz_widget <- df.inzidenz_widget %>%
     geom_text(
         aes(y = sieben_tage_inzidenz_nation+20, label = text_nation),
         hjust = 1,
-        color = "#222222",
+        color = "#444444",
         size = 3
     ) +
     geom_text(
         aes(y = sieben_tage_inzidenz_local+20, label = text_local),
         hjust = 1,
-        color = "#222222",
+        color = "#444444",
         size = 3
     ) +
     scale_x_date(date_breaks = "1 day", date_labels = "%e. %b") +
@@ -172,18 +172,19 @@ fig.inzidenz_widget <- df.inzidenz_widget %>%
         },
         minor_breaks = NULL
     ) +
-    theme(
-        plot.background = element_rect(fill = "#222222", color = "#222222"),
-        panel.background = element_rect(fill = "#222222", color = "#222222"),
-        strip.background = element_rect(fill = "#222222", color = "#222222"),
+	theme(
+        plot.background = element_rect(fill = "#f7f7f7", color = "#f7f7f7"),
+        panel.background = element_rect(fill = "#f7f7f7", color = "#f7f7f7"),
+        strip.background = element_rect(fill = "#f7f7f7", color = "#f7f7f7"),
         panel.grid.major.x = element_blank(),
         panel.grid.minor.x = element_blank(),
+        panel.grid.major.y = element_line(color = "#444444"),
         axis.title = element_blank(),
-        axis.text = element_text(color = "#f7f7f7"),
+        axis.text = element_text(color = "#444444"),
         axis.text.x = element_blank(),
         axis.text.y = element_text(angle = 90, hjust = 0.5),
-        axis.ticks.x = element_line(color = "#FFFFFF"),
-        plot.margin=unit(c(4, 4, 4, 4), "mm")
+		axis.ticks.x = element_line(color = "#444444"),
+        axis.ticks.y = element_line(color = "#cccccc"),
+        plot.margin=unit(c(3, 4, 4, 3), "mm")
     )
-
 ggsave("data/widget_light.png", fig.inzidenz_widget, scale = 1.2, height = 30, width = 30, units = "mm")
