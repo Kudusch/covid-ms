@@ -32,7 +32,8 @@ fig.hosp <- RKI_Hosp_adj %>%
   	) %>% 
   	select(Datum, Bundesland, Hospitalisierungsrate_fix, Hospitalisierungsrate_akt, Korrigierte_Hospitalisierungsrate, upper, lower) %>% 
     filter(Bundesland == "Bundesgebiet") %>% 
-  	ggplot(aes(x = Datum)) +
+  	filter(!is.na(Korrigierte_Hospitalisierungsrate)) %>% 
+    ggplot(aes(x = Datum)) +
   	geom_ribbon(
     	aes(ymin = lower, ymax = upper),
         fill = "lightblue",

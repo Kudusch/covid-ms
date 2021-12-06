@@ -43,7 +43,6 @@ Das RKI meldet eine 7-Tage-Inzidenz für Münster von ```r round(as.numeric(df.m
 Insgesamt sind seit März 2020 ```r format(total_cases, digits = 0, scientific = FALSE, big.mark = ".", decimal.mark = ",")``` Personen an COVID-19 erkrankt, wobei davon insgesamt etwa ```r format(total_recovered, digits = 0, scientific = FALSE, big.mark = ".", decimal.mark = ",")```[\(^1\)](#fn1) Personen wieder genesen und ```r format(total_deceased, digits = 0, scientific = FALSE, big.mark = ".", decimal.mark = ",")``` verstorben sind. Die Todesrate beträgt für Münster ```r round(death_rate_percent, 2)```%.
 
 ```{r echo=FALSE, out.width = "98%", out.height= "350px"}
-
 df.meta %>% select(
   county_name, 
   cases7_per_100k, 
@@ -56,26 +55,26 @@ df.meta %>% select(
 ) %>% 
   mutate(county_name = stringr::str_replace(county_name, regex(".* "), "")) %>% 
   mutate(across(c(death_rate_percent, case_rate_percent, cases7_per_100k), ~ format(round(.x, 2), nsmall = 2))) %>% 
-  left_join(df.notbremse, by = "county_name") %>% 
-  relocate(notbremse, .after = county_name) %>% 
+  #left_join(df.notbremse, by = "county_name") %>% 
+  #relocate(notbremse, .after = county_name) %>% 
   reactable(
     compact = TRUE, borderless = TRUE, striped = TRUE, highlight = TRUE,
     columns = list(
       county_name = colDef(name = "Name", minWidth = 120, align = "left"),
-      notbremse = colDef(name = "Notbremse", align = "center"),
+      #notbremse = colDef(name = "Notbremse", align = "center"),
       cases7_per_100k = colDef(name = "7-Tage-Inzidenz", align = "right"),
       current_cases = colDef(name = "Aktuelle Fälle", align = "right"),
       case_rate_percent = colDef(name = "Inzidenz", align = "right"),
       death_rate_percent = colDef(name = "Todesrate", align = "right"),
       total_cases = colDef(name = "Fälle", align = "right"),
       total_recovered = colDef(name = "Genesen", align = "right"),
-      total_deceased = colDef(name = "Verstorben", align = "right"),
-      first_day = colDef(name = "Notbremse gilt seit", align = "right"),
-      days_since = colDef(name = "Werktage < 100", align = "right")
+      total_deceased = colDef(name = "Verstorben", align = "right")
+      #first_day = colDef(name = "Notbremse gilt seit", align = "right"),
+      #days_since = colDef(name = "Werktage < 100", align = "right")
     ),
     columnGroups = list(
-      colGroup(name = "Insgesamt", columns = c("total_cases", "total_recovered", "total_deceased")),
-      colGroup(name = "Notbremse", columns = c("first_day", "days_since"))
+      colGroup(name = "Insgesamt", columns = c("total_cases", "total_recovered", "total_deceased"))
+      #,colGroup(name = "Notbremse", columns = c("first_day", "days_since"))
     )
   )
 ```
