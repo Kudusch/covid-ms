@@ -90,24 +90,6 @@ ggplotly(fig.inzidenz, tooltip = c("x", "y"), dynamicTicks = TRUE) %>%
 #  plotly::layout(legend = list(orientation = "h", x = 0, y = -0.3))
 ```
 
-## Notbremse
-
-Die Notbremse ```r df.notbremse[df.notbremse["county_name"] == "Münster","notbremse"]``` für Münster. Laut den täglich gemeldeten Daten liegt die 7-Tage-Inzidenz für Münster seit ```r df.notbremse[df.notbremse["county_name"] == "Münster", "days_since"]``` Werktag(en) unter 100. Die errechnete Inzidenz ist in Münster durchschnittlich um ```r mean_delta_reported_calculated```% höher, als die täglich gemeldete.
-
-```{r echo=FALSE, out.width = "98%", out.height= "350px"}
-ggplotly(fig.notbremse, tooltip = c("x", "y"), dynamicTicks = TRUE) %>% 
-    plotly::config(displayModeBar = FALSE) %>% 
-    plotly::layout(
-        showlegend = FALSE,
-        selectdirection = "h",
-        title = list(text = paste0('Gemeldete und errechnete 7-Tage-Inzidenz für Münster',
-                                    '<br>',
-                                    '<sup>',
-                                    'Gemeldete Inzidenz als Balken und und errechnete Inzidenz als Rauten',
-                                    '</sup>'))
-    )
-```
-
 ## Deutschlandweite Trends
 
 ```{r echo=FALSE, out.width = "98%", out.height= "350px"}

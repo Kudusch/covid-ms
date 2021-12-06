@@ -24,12 +24,14 @@ RKI_Hosp_adj <- vroom::vroom("raw_data/RKI_Hosp_adj.csv")
 
 fig.hosp <- RKI_Hosp_adj %>%
 	rename(
-    	Hospitalisierungsrate = "7T_Hospitalisierung_Inzidenz",
+    	Hospitalisierungsrate_fix = "fixierte_7T_Hospitalisierung_Inzidenz",
+    	Hospitalisierungsrate_akt = "aktualisierte_7T_Hospitalisierung_Inzidenz",
     	Korrigierte_Hospitalisierungsrate = PS_adjustierte_7T_Hospitalisierung_Inzidenz,
     	upper = OG_PI_adjustierte_7T_Hospitalisierung_Inzidenz,
     	lower = UG_PI_adjustierte_7T_Hospitalisierung_Inzidenz
   	) %>% 
-  	select(Datum, Hospitalisierungsrate, Korrigierte_Hospitalisierungsrate, upper, lower) %>% 
+  	select(Datum, Bundesland, Hospitalisierungsrate_fix, Hospitalisierungsrate_akt, Korrigierte_Hospitalisierungsrate, upper, lower) %>% 
+    filter(Bundesland == "Bundesgebiet") %>% 
   	ggplot(aes(x = Datum)) +
   	geom_ribbon(
     	aes(ymin = lower, ymax = upper),
@@ -37,7 +39,8 @@ fig.hosp <- RKI_Hosp_adj %>%
         color = "lightblue"
     ) +
   	geom_line(aes(y = Korrigierte_Hospitalisierungsrate), color = "blue", linetype = "dotted") +
-  	geom_line(aes(y = Hospitalisierungsrate)) +
+    #geom_line(aes(y = Hospitalisierungsrate_fix), color = "black") +
+  	geom_line(aes(y = Hospitalisierungsrate_akt), color = "black") +
 	labs(
 		title = "7-Tage-Inzidenz der hospitalisierten COVID-19-Fälle",
 		subtitle = "Punktschätzer und 95%-Prädiktionsintervall der adjustierten 7-Tage-Hospitalisierungsinzidenz in blau",
