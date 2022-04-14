@@ -17,15 +17,16 @@ library(plotly)
 library(stringr)
 
 fig.inzidenz_nation_wide <- readRDS("data/fig.inzidenz_nation_wide.RDS")
-fig.notbremse <- readRDS("data/fig.notbremse.RDS")
 fig.gender <- readRDS("data/fig.gender.RDS")
 fig.mean_age <- readRDS("data/fig.mean_age.RDS")
 fig.cases <-readRDS("data/fig.cases.RDS")
 fig.inzidenz <- readRDS("data/fig.inzidenz.RDS")
 fig.hosp <- readRDS("data/fig.hosp.RDS")
-df.notbremse <- readRDS("data/df.notbremse.RDS")
-df.gemeldet <- readRDS("data/df.gemeldet.RDS")
+#df.gemeldet <- readRDS("data/df.gemeldet.RDS")
 df.meta <- readRDS("data/df.meta.RDS")
+
+#fig.notbremse <- readRDS("data/fig.notbremse.RDS")
+#df.notbremse <- readRDS("data/df.notbremse.RDS")
 
 total_cases <- df.meta[df.meta$county_name == "Münster", "total_cases"]
 total_deceased <- df.meta[df.meta$county_name == "Münster", "total_deceased"]
@@ -33,8 +34,8 @@ total_recovered <- df.meta[df.meta$county_name == "Münster", "total_recovered"]
 current_cases <- df.meta[df.meta$county_name == "Münster", "current_cases"]
 case_rate_percent <- df.meta[df.meta$county_name == "Münster", "case_rate_percent"]
 death_rate_percent <- df.meta[df.meta$county_name == "Münster", "death_rate_percent"]
-mean_delta_reported_calculated <- mean((df.gemeldet %>% filter(county_name == "Münster", !is.na(i_reported)) %>% mutate(delta_p = (i_calculated-i_reported)/i_reported))$delta_p)
-mean_delta_reported_calculated <- format(round(mean_delta_reported_calculated*100, 2), nsmall = 2)
+#mean_delta_reported_calculated <- mean((df.gemeldet %>% filter(county_name == "Münster", !is.na(i_reported)) %>% mutate(delta_p = (i_calculated-i_reported)/i_reported))$delta_p)
+#mean_delta_reported_calculated <- format(round(mean_delta_reported_calculated*100, 2), nsmall = 2)
 
 ```
 
