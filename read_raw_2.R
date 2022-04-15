@@ -167,3 +167,57 @@ fig.inzidenz_nation_wide <- rbind(
     theme_minimal()
 
 saveRDS(fig.inzidenz_nation_wide, "data/fig.inzidenz_nation_wide.RDS")
+
+fig.deaths <- df.nation_wide %>% 
+    rename(Datum = Meldedatum_date, Todesfälle = deaths_kum) %>%
+    select(Datum, Todesfälle) %>% 
+    ggplot(aes(
+        x = Datum, 
+        y = Todesfälle
+    )) +
+    geom_area() +
+    scale_y_continuous(labels = number) +
+    labs(
+        title = "Kummulierte Todesfälle über Zeit",
+        y = "Kummulierte Todesfälle",
+        x = "Datum"
+    ) +
+    theme_minimal()
+
+saveRDS(fig.deaths, "data/fig.deaths.RDS")
+
+fig.cases_kum_over_time <- df.states %>% 
+    rename(Datum = Meldedatum_date) %>%
+    select(Datum, Bundesland, cases_kum) %>% 
+    ggplot(aes(x = Datum, y = cases_kum, fill = Bundesland)) +
+    scale_y_continuous(labels = number) +
+    geom_area(position = position_stack(), color = "black") +
+    labs(
+        title = "Kummulierte Fälle über Zeit",
+        y = "Kummulierte Infektionen",
+        x = "Datum",
+        fill = "Bundesland"
+    ) +
+    theme_minimal()
+
+fig.cases_kum_over_time <- df.states %>% 
+    rename(Datum = Meldedatum_date) %>%
+    select(Datum, Bundesland, cases_kum) %>% 
+    plot_ly(
+        ., 
+        x = ~Datum, 
+        y = ~cases_kum, 
+        type = 'scatter', 
+        mode = 'none', 
+        stackgroup = 'one', 
+        split = ~Bundesland
+    ) %>% 
+    plotly::config(displayModeBar = FALSE) %>% 
+    layout(
+        title = "Kummulierte Fälle über Zeit",
+        xaxis = list(title = "Datum"), 
+        yaxis = list(title = "Kummulierte Infektionen"), 
+        legend = list(title=list(text="Bundesland"))
+    )
+
+saveRDS(fig.cases_kum_over_time, "data/fig.cases_kum_over_time.RDS")

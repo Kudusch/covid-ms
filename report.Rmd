@@ -22,11 +22,11 @@ fig.mean_age <- readRDS("data/fig.mean_age.RDS")
 fig.cases <-readRDS("data/fig.cases.RDS")
 fig.inzidenz <- readRDS("data/fig.inzidenz.RDS")
 fig.hosp <- readRDS("data/fig.hosp.RDS")
-#df.gemeldet <- readRDS("data/df.gemeldet.RDS")
+fig.deaths <- readRDS("data/fig.deaths.RDS")
+fig.cases_kum_over_time <- readRDS("data/fig.cases_kum_over_time.RDS")
 df.meta <- readRDS("data/df.meta.RDS")
 
-#fig.notbremse <- readRDS("data/fig.notbremse.RDS")
-#df.notbremse <- readRDS("data/df.notbremse.RDS")
+
 
 total_cases <- df.meta[df.meta$county_name == "Münster", "total_cases"]
 total_deceased <- df.meta[df.meta$county_name == "Münster", "total_deceased"]
@@ -34,8 +34,7 @@ total_recovered <- df.meta[df.meta$county_name == "Münster", "total_recovered"]
 current_cases <- df.meta[df.meta$county_name == "Münster", "current_cases"]
 case_rate_percent <- df.meta[df.meta$county_name == "Münster", "case_rate_percent"]
 death_rate_percent <- df.meta[df.meta$county_name == "Münster", "death_rate_percent"]
-#mean_delta_reported_calculated <- mean((df.gemeldet %>% filter(county_name == "Münster", !is.na(i_reported)) %>% mutate(delta_p = (i_calculated-i_reported)/i_reported))$delta_p)
-#mean_delta_reported_calculated <- format(round(mean_delta_reported_calculated*100, 2), nsmall = 2)
+
 
 ```
 
@@ -112,6 +111,15 @@ ggplotly(fig.hosp, tooltip = c("x", "text"), dynamicTicks = TRUE) %>%
                                               "</sup>"
                            ))
     )
+```
+
+```{r echo=FALSE, out.width = "98%", out.height= "350px"}
+ggplotly(fig.deaths, tooltip = c("x", "y"), dynamicTicks = TRUE) %>% 
+    plotly::config(displayModeBar = FALSE)
+```
+
+```{r echo=FALSE, out.width = "98%", out.height= "350px"}
+fig.cases_kum_over_time
 ```
 
 ```{r echo=FALSE, out.width = "98%", out.height= "350px"}
